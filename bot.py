@@ -4,11 +4,6 @@ import json
 import os
 import time
 
-# Event Loop Fix for Python 3.10+
-sys.modules["uvloop"] = None
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
 from hydrogram import Client, filters
 from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest
 from hydrogram.errors import UserNotParticipant
@@ -28,7 +23,7 @@ REQ_CHANNEL_LINK = "https://t.me/+vM_Qw32vxK81NmNl"
 
 HEADER_VIDEO = "https://example.com/your_video.mp4"
 
-# CLIENT INITIALIZATION (Must be defined before decorators)
+# CLIENT INITIALIZATION
 app = Client("NobitaBanBotSession", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # --- APPROVED REQUEST USERS FILE SYSTEM ---
@@ -73,7 +68,7 @@ async def check_force_join(client, user_id):
     if user_id == OWNER_ID:
         return True
     
-    # 1. Strictly Check 1st Mandatory Channel Membership
+    # 1. Check Mandatory Channel Membership
     try:
         await client.get_chat_member(MANDATORY_CHANNEL, user_id)
     except UserNotParticipant:
@@ -85,7 +80,7 @@ async def check_force_join(client, user_id):
     if user_id in approved_req_users:
         return True
 
-    # 3. Fallback Check: Direct membership check in discussion group
+    # 3. Fallback Check: Direct membership in discussion group
     try:
         chat_member = await client.get_chat_member("chatgctest", user_id)
         if chat_member:
@@ -125,13 +120,12 @@ def get_main_menu(user_id):
 
     caption = (
         "🔥 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑿 𝑩𝑨𝑵 𝑩𝑶𝑻 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b> 🔥\n\n"
-        "😎 Good afternoon!\n\n"
         "• 💀 Permanent Ban\n"
         "• ⏳ Temporary Ban\n"
         "• 🔍 Ban Status Checker\n"
         "• 💥 Mass Reporting System\n\n"
         "<code>┌───────────────┬───────────────┐\n"
-        "│     Field     │     Value     │\n"
+        "│      Field    │     Value     │\n"
         "├───────────────┼───────────────┤\n"
         f"│ 👤 User       │ {user_id:<13} │\n"
         f"│ 👑 Status     │ {status_str:<13} │\n"
@@ -177,7 +171,7 @@ async def add_premium_cmd(client, message):
             users_db[target_id] = {'referrals': 0, 'is_premium': True}
         else:
             users_db[target_id]['is_premium'] = True
-        await message.reply(f"✅ User <code>{target_id}</code> has been upgraded to 💎 <b>PREMIUM</b>!")
+        await message.reply(f"✅ User <code>{target_id}</code> upgraded to 💎 <b>PREMIUM</b>!")
     except ValueError:
         await message.reply("❌ Invalid User ID.")
 
@@ -342,11 +336,11 @@ async def cb_handler(client, query):
             ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
             restricted_text = (
                 "🚫 <b><u>ACCESS RESTRICTED</u></b> 🚫\n\n"
-                "⚠️ <i>You are currently a 🪙 FREE User. To use this feature, you must upgrade to 💎 PREMIUM!</i>\n\n"
+                "⚠️ <i>You are currently a 🪙 FREE User. Upgrade to 💎 PREMIUM to use this feature!</i>\n\n"
                 f"📊 <b>Your Referrals:</b> <code>{user_data['referrals']}/10</code>\n\n"
                 "🎯 <b><u>HOW TO UNLOCK PREMIUM?</u></b>\n"
-                f"1️⃣ <b>Referral Method:</b> Invite 10 friends using your link below:\n<code>{ref_link}</code>\n\n"
-                f"2️⃣ <b>Direct Method:</b> Contact the Owner to buy Premium access."
+                f"1️⃣ <b>Referral Method:</b> Invite 10 friends using your link:\n<code>{ref_link}</code>\n\n"
+                f"2️⃣ <b>Direct Method:</b> Contact Owner to buy Premium."
             )
             restricted_buttons = InlineKeyboardMarkup([
                 [InlineKeyboardButton("📤 Share Referral Link", url=f"https://t.me/share/url?url={ref_link}&text=Join%20Nobita%20Ban%20Bot")],
@@ -381,17 +375,6 @@ async def cb_handler(client, query):
             await query.message.edit_text(text=ask_text, reply_markup=buttons)
 
 # --- BOT EXECUTION ---
-
-async def main():
-    await app.start()
-    print("Nobita X Ban Bot is Running Successfully!")
-    await asyncio.Event().wait()
-
 if __name__ == "__main__":
-    try:
-        loop.run_until_complete(main())
-    except KeyboardInterrupt:
-        pass
-    finally:
-        if app.is_connected:
-            loop.run_until_complete(app.stop())
+    print("🚀 Nobita X Ban Bot Starting...")
+    app.run()
