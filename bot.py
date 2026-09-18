@@ -3,8 +3,10 @@ import asyncio
 import json
 import os
 import time
+import threading
+from flask import Flask
 
-# --- EVENT LOOP FIX FOR PYTHON 3.10+ / 3.14 (RENDER FIX) ---
+# --- 1. EVENT LOOP FIX FOR PYTHON 3.10+ / 3.14 ---
 try:
     loop = asyncio.get_running_loop()
 except RuntimeError:
@@ -15,7 +17,7 @@ from hydrogram import Client, filters
 from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest
 from hydrogram.errors import UserNotParticipant
 
-# --- CONFIGURATION ---
+# --- 2. CONFIGURATION ---
 API_ID = 33772941  
 API_HASH = "3b6ab6b1940c87915439bb41e4e80ea8"  
 BOT_TOKEN = "8904752333:AAFeTxNjK0VhzBU60qT8asTIZo09too2ahE"
@@ -33,7 +35,18 @@ HEADER_VIDEO = "https://example.com/your_video.mp4"
 # CLIENT INITIALIZATION
 app = Client("NobitaBanBotSession", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# --- APPROVED REQUEST USERS FILE SYSTEM ---
+# --- 3. DUMMY FLASK SERVER (RENDER PORT BINDING FIX) ---
+web_app = Flask(__name__)
+
+@web_app.route('/')
+def home():
+    return "Nobita Ban Bot is Active and Running Perfectly!"
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host="0.0.0.0", port=port)
+
+# --- 4. APPROVED REQUEST USERS FILE SYSTEM ---
 REQ_FILE = "approved_users.json"
 
 def load_approved_users():
@@ -56,7 +69,7 @@ cooldowns = {}
 user_states = {}
 COOLDOWN_TIME = 600
 
-# --- JOIN REQUEST EVENT HANDLER ---
+# --- 5. JOIN REQUEST EVENT HANDLER ---
 
 @app.on_chat_join_request()
 async def track_join_requests(client, chat_join_request: ChatJoinRequest):
@@ -64,7 +77,7 @@ async def track_join_requests(client, chat_join_request: ChatJoinRequest):
     save_approved_user(user_id)
     print(f"✅ [JOIN REQUEST APPROVED] User ID: {user_id}")
 
-# --- HELPER FUNCTIONS ---
+# --- 6. HELPER FUNCTIONS ---
 
 def render_progress_bar(percent: int, length: int = 10) -> str:
     filled = int(length * percent // 100)
@@ -151,7 +164,7 @@ def get_main_menu(user_id):
     ])
     return caption, buttons
 
-# --- COMMAND HANDLERS ---
+# --- 7. COMMAND HANDLERS ---
 
 @app.on_message(filters.command("stats") & filters.user(OWNER_ID))
 async def stats_cmd(client, message):
@@ -290,6 +303,8 @@ async def handle_input(client, message):
         back_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_menu")]])
         await msg.edit_text(final_output, reply_markup=back_btn)
 
+# --- 8. CALLBACK QUERY HANDLER ---
+
 @app.on_callback_query()
 async def cb_handler(client, query):
     user_id = query.from_user.id
@@ -381,7 +396,12 @@ async def cb_handler(client, query):
         except Exception:
             await query.message.edit_text(text=ask_text, reply_markup=buttons)
 
-# --- BOT EXECUTION ---
+# --- 9. BOT EXECUTION ---
 if __name__ == "__main__":
+    print("🚀 Starting Dummy Web Server for Render Port Binding...")
+    server_thread = threading.Thread(target=run_web_server)
+    server_thread.daemon = True
+    server_thread.start()
+
     print("🚀 Nobita X Ban Bot Starting...")
     app.run()
