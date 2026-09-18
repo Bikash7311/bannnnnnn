@@ -4,6 +4,13 @@ import json
 import os
 import time
 
+# --- EVENT LOOP FIX FOR PYTHON 3.10+ / 3.14 (RENDER FIX) ---
+try:
+    loop = asyncio.get_running_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
 from hydrogram import Client, filters
 from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest
 from hydrogram.errors import UserNotParticipant
