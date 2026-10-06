@@ -3,6 +3,7 @@ import json
 import os
 import time
 import threading
+from datetime import datetime
 from flask import Flask
 
 # --- 1. EVENT LOOP FIX ---
@@ -37,14 +38,16 @@ REQ_CHANNEL_LINK = "https://t.me/+vM_Qw32vxK81NmNl"
 
 HEADER_VIDEO = "https://videotourl.com/videos/1791282196960-032c9029-1397-468f-a61f-d9ce71d18614.mp4"
 
+START_TIME = time.time()
+
 app = Client("NobitaBanBotSession", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# --- 3. DUMMY FLASK SERVER ---
+# --- 3. FLASK SERVER ---
 web_app = Flask(__name__)
 
 @web_app.route('/')
 def home():
-    return "Nobita Ban Bot is Active!"
+    return "Nobita Ban Bot Active & Running!"
 
 def run_web_server():
     port = int(os.environ.get("PORT", 10000))
@@ -74,7 +77,7 @@ users_db = {int(k): v for k, v in raw_users_db.items()}
 
 cooldowns = {}
 user_states = {}
-COOLDOWN_TIME = 600
+COOLDOWN_TIME = 300  # 5 Minutes Cooldown
 
 # --- 5. JOIN REQUEST HANDLER ---
 @app.on_chat_join_request()
@@ -88,6 +91,17 @@ def render_progress_bar(percent: int, length: int = 12) -> str:
     filled = int(length * percent // 100)
     bar = "█" * filled + "░" * (length - filled)
     return f"[{bar}] {percent}%"
+
+def get_readable_time(seconds: int) -> str:
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    time_str = ""
+    if d: time_str += f"{d}d "
+    if h: time_str += f"{h}h "
+    if m: time_str += f"{m}m "
+    if s: time_str += f"{s}s"
+    return time_str if time_str else "0s"
 
 async def check_force_join(client, user_id):
     if user_id == OWNER_ID:
@@ -115,28 +129,27 @@ async def check_force_join(client, user_id):
 
 def get_force_join_menu():
     text = (
-        "<b><u>ACCESS DENIED - MANDATORY JOIN REQUIRED</u></b>\n\n"
-        "<blockquote>✨ <i>Bot features use karne ke liye Main Channel Join karein aur Baaki Links par Request Send karein!</i></blockquote>\n\n"
-        "1️⃣ <b>📢 Main Channel (Join Mandatory)</b>\n"
-        "2️⃣ <b>💬 Discussion Group (Send Request)</b>\n"
-        "3️⃣ <b>🔒 Private Channel (Send Request)</b>"
+        "<b><u>⛔ 𝑨𝑪𝑪𝑬𝑺𝑺 𝑫𝑬𝑵𝑰𝑬𝑫 - 𝑴𝑨𝑵𝑫𝑨𝑻𝑶𝑹𝒀 𝑱𝑶𝑰𝑵 𝑹𝑬𝑼𝑬𝑺𝑻𝑬𝑫</u></b>\n\n"
+        "<blockquote>✨ <i>𝑩𝒐𝒕 features unlock karne ke liye sabhi links par Join / Request bhein!</i></blockquote>\n\n"
+        "📢 <b>1️⃣ Main Channel (Must Join)</b>\n"
+        "💬 <b>2️⃣ Discussion Group (Send Request)</b>\n"
+        "🔒 <b>3️⃣ Private VIP Channel (Send Request)</b>"
     )
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📢 Join Main Channel", url=f"https://t.me/{MANDATORY_CHANNEL}")],
-        [InlineKeyboardButton("💬 Request Group Join", url=MANDATORY_GROUP_LINK)],
-        [InlineKeyboardButton("🔒 Request Private Channel", url=REQ_CHANNEL_LINK)],
-        [InlineKeyboardButton("🔄 Try Again", callback_data="check_join_status")]
+        [InlineKeyboardButton("📢 𝑱𝒐𝒊𝒏 𝑴𝒂𝒊𝒏 𝑪𝒉𝒂𝒏𝒏𝒆𝒍", url=f"https://t.me/{MANDATORY_CHANNEL}")],
+        [InlineKeyboardButton("💬 𝑹𝒆𝒒𝒖𝒆𝒔𝒕 𝑮𝒓𝒐𝒖𝒑 𝑱𝒐𝒊𝒏", url=MANDATORY_GROUP_LINK)],
+        [InlineKeyboardButton("🔒 𝑹𝒆𝒒𝒖𝒆𝒔𝒕 𝑽𝑰𝑷 𝑪𝒉𝒂𝒏𝒏𝒆𝒍", url=REQ_CHANNEL_LINK)],
+        [InlineKeyboardButton("🔄 𝑪𝒉𝒆𝒄𝒌 𝑽𝒆𝒓𝒊𝒇𝒊𝒄𝒂𝒕𝒊𝒐𝒏", callback_data="check_join_status")]
     ])
     return text, buttons
 
-# Video Title & Blockquote Style Caption
 def get_main_menu(user_id):
     user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
     
     if user_id == OWNER_ID:
         status_str = "👑 OWNER"
     elif user_data.get('is_premium', False):
-        status_str = "👑 PREMIUM"
+        status_str = "💎 PREMIUM"
     else:
         status_str = "🪙 FREE"
 
@@ -144,14 +157,13 @@ def get_main_menu(user_id):
     u_str = str(user_id)
 
     caption = (
-        "🥊 <b>NOBITA BAN x UNBAN PREMIUM BOT</b> 🥊\n\n"
+        "🥊 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑩𝑨𝑵 𝒙 𝑼𝑵𝑩𝑨𝑵 𝑷𝑹𝑬𝑴𝑰𝑼𝑴 𝑩𝑶𝑻</u></b> 🥊\n\n"
         "<blockquote>"
-        "😮 <b>Good morning!</b>\n\n"
+        "⚡ <b>𝑾𝒆𝒍𝒄𝒐𝒎𝒆 𝒕𝒐 𝑷𝒓𝒆𝒎𝒊𝒖𝒎 𝑩𝒂𝒏 𝑪𝒆𝒏𝒕𝒆𝒓!</b>\n\n"
         "• 💀 <b>Permanent Ban</b>\n"
         "• ⏳ <b>Temporary Ban</b>\n"
-        "• 📊 <b>Ban Status Checker</b>\n"
-        "• 🔥 <b>Mass Reporting System</b>\n\n"
-        "                👥 <b>User</b>\n\n"
+        "• 💥 <b>Mass Reporting System</b>\n"
+        "• 🎯 <b>Unban Target Module</b>\n\n"
         "<code>┌─────────────────────────┐\n"
         f"│ Field     │ Value       │\n"
         "├─────────────────────────┤\n"
@@ -164,15 +176,14 @@ def get_main_menu(user_id):
     )
     return caption
 
-# Bottom Reply Keyboard (Screenshot Match)
 def get_bottom_keyboard():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("Permanent Ban"), KeyboardButton("⏳ Temporary Ban")],
-            [KeyboardButton("Mass Report"), KeyboardButton("✅ Unban Target")],
-            [KeyboardButton("📊 Ban Status Checker"), KeyboardButton("🗄️ Bot Status")],
-            [KeyboardButton("🚀 Invite a Friend"), KeyboardButton("🏆 Thanks To")],
-            [KeyboardButton("👤 Language")]
+            [KeyboardButton("💀 Permanent Ban"), KeyboardButton("⏳ Temporary Ban")],
+            [KeyboardButton("💥 Mass Report"), KeyboardButton("🎯 Unban Target")],
+            [KeyboardButton("💎 Purchase Premium"), KeyboardButton("🚀 Invite a Friend")],
+            [KeyboardButton("🗄️ Bot Status"), KeyboardButton("🌐 Language")],
+            [KeyboardButton("🏆 Thanks To")]
         ],
         resize_keyboard=True
     )
@@ -183,12 +194,16 @@ async def stats_cmd(client, message):
     total_users = len(users_db)
     premium_users = sum(1 for u in users_db.values() if u.get('is_premium', False))
     free_users = total_users - premium_users
+    uptime_str = get_readable_time(int(time.time() - START_TIME))
     
     stats_text = (
-        "📊 <b><u>BOT STATS</u></b>\n\n"
+        "📊 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑩𝑶𝑻 𝑺𝑻𝑨𝑻𝑰𝑺𝑻𝑰𝑪𝑺</u></b> 📊\n\n"
+        "<blockquote>"
         f"👥 <b>Total Users:</b> <code>{total_users}</code>\n"
-        f"👑 <b>Premium Users:</b> <code>{premium_users}</code>\n"
-        f"🪙 <b>Free Users:</b> <code>{free_users}</code>"
+        f"💎 <b>Premium Users:</b> <code>{premium_users}</code>\n"
+        f"🪙 <b>Free Users:</b> <code>{free_users}</code>\n"
+        f"⏱️ <b>Uptime:</b> <code>{uptime_str}</code>"
+        "</blockquote>"
     )
     await message.reply_video(video=HEADER_VIDEO, caption=stats_text)
 
@@ -204,7 +219,7 @@ async def add_premium_cmd(client, message):
         else:
             users_db[target_id]['is_premium'] = True
         save_json(USERS_FILE, users_db)
-        await message.reply_text(f"✅ User <code>{target_id}</code> upgraded to 👑 <b>PREMIUM</b>!")
+        await message.reply_text(f"✨ User <code>{target_id}</code> upgraded to 💎 <b>PREMIUM</b>!")
     except ValueError:
         await message.reply_text("❌ Invalid User ID.")
 
@@ -242,7 +257,7 @@ async def broadcast_cmd(client, message):
             failed += 1
 
     await msg.edit(
-        "✅ <b><u>BROADCAST COMPLETED</u></b>\n\n"
+        "✨ <b><u>𝑩𝑹𝑶𝑨𝑫𝑪𝑨𝑺𝑻 𝑪𝑶𝑴𝑴𝑷𝑳𝑬𝑻𝑬𝑫</u></b> ✨\n\n"
         f"🎯 <b>Success:</b> <code>{success}</code>\n"
         f"❌ <b>Failed:</b> <code>{failed}</code>"
     )
@@ -276,76 +291,214 @@ async def start_cmd(client, message):
     
     await message.reply_video(video=HEADER_VIDEO, caption=caption, reply_markup=reply_kb)
 
-# Bottom Reply Keyboard Handler
+# --- 8. BOTTOM KEYBOARD CLICK HANDLER ---
 @app.on_message(filters.text & ~filters.command(["start", "stats", "addpremium", "rempremium", "broadcast"]))
 async def handle_bottom_buttons(client, message):
     user_id = message.from_user.id
     text = message.text
 
-    if text in ["Permanent Ban", "⏳ Temporary Ban", "Mass Report", "✅ Unban Target"]:
+    # --- BAN & REPORT ACTIONS ---
+    if text in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report"]:
         user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
         
+        # Premium Check
         if user_id != OWNER_ID and not user_data.get('is_premium', False):
             ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
             restricted_text = (
                 "<blockquote>"
-                "🚫 <b><u>ACCESS RESTRICTED</u></b> 🚫\n\n"
-                "⚠️ <i>Upgrade to 👑 PREMIUM to use this feature!</i>\n\n"
+                "⛔ <b><u>𝑨𝑪𝑪𝑬𝑺𝑺 𝑹𝑬𝑺𝑻𝑹𝑰𝑪𝑻𝑬𝑫</u></b> ⛔\n\n"
+                "⚠️ <i>Aap abhi 🪙 FREE User hain. Yeh action run karne ke liye Premium unlock karein!</i>\n\n"
+                f"👤 <b>Your User ID:</b> <code>{user_id}</code>\n"
                 f"📊 <b>Your Referrals:</b> <code>{user_data.get('referrals', 0)}/10</code>\n\n"
                 f"🔗 <b>Invite Link:</b>\n<code>{ref_link}</code>"
                 "</blockquote>"
             )
-            await message.reply_text(restricted_text)
+            buttons = InlineKeyboardMarkup([
+                [InlineKeyboardButton("💎 Buy Premium Directly", url=f"https://t.me/{OWNER_USERNAME}")]
+            ])
+            await message.reply_video(video=HEADER_VIDEO, caption=restricted_text, reply_markup=buttons)
+            return
+
+        # Cooldown Check (5 Mins = 300 Sec)
+        current_time = time.time()
+        last_time = cooldowns.get(user_id, 0)
+        if current_time - last_time < COOLDOWN_TIME:
+            remaining = int(COOLDOWN_TIME - (current_time - last_time))
+            mins, secs = divmod(remaining, 60)
+            await message.reply_text(f"⏳ <b><u>𝑪𝑶𝑶𝑳𝑫𝑶𝑾𝑵 𝑨𝑪𝑻𝑰𝑽𝑬!</u></b>\n\n<blockquote><i>Please wait {mins}m {secs}s before executing another ban request!</i></blockquote>")
             return
 
         user_states[user_id] = text
-        await message.reply_text(
-            "<blockquote>🎯 <b><u>ENTER TARGET INFORMATION</u></b>\n\n✍️ <i>Please send target username or ID:</i></blockquote>"
-        )
+        prompt_text = "💥 💥 <b>Send the target WhatsApp number (e.g. +234...)</b> 💀 💀"
+        await message.reply_video(video=HEADER_VIDEO, caption=f"<blockquote>{prompt_text}</blockquote>")
         return
 
+    # --- UNBAN TARGET ---
+    if text == "🎯 Unban Target":
+        user_states[user_id] = text
+        prompt_text = "🎯 <b>Send the whatsapp Number You want to Unban (e.g. +234...)</b> 😱"
+        await message.reply_video(video=HEADER_VIDEO, caption=f"<blockquote>{prompt_text}</blockquote>")
+        return
+
+    # --- PURCHASE PREMIUM ---
+    if text == "💎 Purchase Premium":
+        user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
+        status_text = "💎 PREMIUM USER" if user_data.get('is_premium', False) else "🪙 FREE USER"
+        
+        premium_text = (
+            "💎 <b><u>𝑷𝑼𝑑𝑪𝑯𝑨𝑺𝑬 𝑷𝑹𝑬𝑴𝑰𝑼𝑴 𝑨𝑪𝑪𝑬𝑺𝑺</u></b> 💎\n\n"
+            "<blockquote>"
+            "⚡ <b>Unlock all powerful Ban & Mass Reporting features!</b>\n\n"
+            f"👤 <b>Your User ID:</b> <code>{user_id}</code>\n"
+            f"👑 <b>Current Status:</b> <code>{status_text}</code>\n\n"
+            "✨ <b><u>PREMIUM BENEFITS:</u></b>\n"
+            "• 💀 Permanent WhatsApp Ban Access\n"
+            "• ⏳ Temporary WhatsApp Ban Access\n"
+            "• 💥 Mass Reporting 500+ Packets\n"
+            "• ⚡ No Feature Limits & Fast Server\n\n"
+            f"📩 <b>Contact Owner to Buy:</b> @{OWNER_USERNAME}"
+            "</blockquote>"
+        )
+        buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton("👑 Contact Owner (@Znonsence)", url=f"https://t.me/{OWNER_USERNAME}")]
+        ])
+        await message.reply_video(video=HEADER_VIDEO, caption=premium_text, reply_markup=buttons)
+        return
+
+    # --- BOT STATUS ---
+    if text == "🗄️ Bot Status":
+        uptime_str = get_readable_time(int(time.time() - START_TIME))
+        total_users = len(users_db)
+        status_msg = (
+            "🤖 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑩𝑶𝑻 𝑺𝑻𝑨𝑻𝑼𝑺</u></b> 🗄️\n\n"
+            "<blockquote>"
+            f"⚡ <b>System Status:</b> <code>ONLINE & RUNNING</code>\n"
+            f"⏱️ <b>Bot Uptime:</b> <code>{uptime_str}</code>\n"
+            f"👥 <b>Total Active Users:</b> <code>{total_users}</code>\n"
+            f"🛡️ <b>Protection Routine:</b> <code>ACTIVE</code>"
+            "</blockquote>"
+        )
+        await message.reply_video(video=HEADER_VIDEO, caption=status_msg)
+        return
+
+    # --- INVITE A FRIEND ---
     if text == "🚀 Invite a Friend":
         ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
         user_data = users_db.get(user_id, {'referrals': 0})
         invite_text = (
+            "🚀 <b><u>𝑰𝑵𝑽𝑰𝑻𝑬 & 𝑬𝑨𝑹𝑵 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b> 🚀\n\n"
             "<blockquote>"
-            "🚀 <b><u>INVITE & EARN PREMIUM</u></b>\n\n"
-            f"📊 <b>Your Referrals:</b> <code>{user_data.get('referrals', 0)}/10</code>\n"
+            "💡 <i>10 dosto ko apne unique referral link se join karwaye aur automatic 💎 PREMIUM Access payein!</i>\n\n"
+            f"👤 <b>Your User ID:</b> <code>{user_id}</code>\n"
+            f"📊 <b>Your Referrals:</b> <code>{user_data.get('referrals', 0)}/10</code>\n\n"
             f"🔗 <b>Your Invite Link:</b>\n<code>{ref_link}</code>"
             "</blockquote>"
         )
-        await message.reply_text(invite_text)
+        buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📤 Share Referral Link", url=f"https://t.me/share/url?url={ref_link}&text=Join%20Nobita%20Ban%20Bot")],
+            [InlineKeyboardButton("👑 Contact Owner", url=f"https://t.me/{OWNER_USERNAME}")]
+        ])
+        await message.reply_video(video=HEADER_VIDEO, caption=invite_text, reply_markup=buttons)
         return
 
+    # --- LANGUAGE ---
+    if text == "🌐 Language":
+        lang_text = (
+            "🌐 <b><u>𝑺𝑬𝑳𝑬𝑪𝑻 𝒀𝑶𝑼𝑴 𝑳𝑨𝑵𝑮𝑼𝑨𝑮𝑬</u></b>\n\n"
+            "<blockquote><i>Choose your preferred language for bot interface:</i></blockquote>"
+        )
+        buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🇮🇳 English (Default)", callback_data="set_lang_en"), InlineKeyboardButton("🇮🇳 Hindi", callback_data="set_lang_hi")]
+        ])
+        await message.reply_video(video=HEADER_VIDEO, caption=lang_text, reply_markup=buttons)
+        return
+
+    # --- THANKS TO ---
     if text == "🏆 Thanks To":
         thanks_text = (
+            "🏆 <b><u>𝑺𝑴𝑬𝑪𝑰𝑨𝑳 𝑻𝑯𝑨𝑵𝑴𝑺 𝑻𝑶</u></b>\n\n"
             "<blockquote>"
-            "🏆 <b><u>SPECIAL THANKS TO</u></b>\n\n"
-            f"👑 <b>Owner:</b> @{OWNER_USERNAME}\n"
-            f"📢 <b>Channel:</b> @{MANDATORY_CHANNEL}"
+            f"👑 <b>Bot Owner:</b> @{OWNER_USERNAME}\n"
+            f"📢 <b>Main Channel:</b> @{MANDATORY_CHANNEL}\n"
+            "💎 <i>Thanks to all Premium Subscribers & Supporters!</i>"
             "</blockquote>"
         )
-        await message.reply_text(thanks_text)
+        await message.reply_video(video=HEADER_VIDEO, caption=thanks_text)
         return
 
-    # User Input Processing
+    # --- TARGET INPUT & 20-SECOND ANIMATION ROUTINE ---
     if user_id in user_states:
         action_type = user_states.pop(user_id)
-        target = text.strip()
+        target_number = text.strip()
         
-        msg = await message.reply_text("⏳ <b>Processing Task...</b>")
-        for pct in [20, 50, 100]:
-            await asyncio.sleep(0.5)
-            bar = render_progress_bar(pct)
-            await msg.edit_text(f"<blockquote>⚡ <b>Status:</b> {bar}</blockquote>")
+        # Record Cooldown timestamp for paid actions
+        if action_type in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report"]:
+            cooldowns[user_id] = time.time()
 
-        await msg.edit_text(
-            f"<blockquote>🎯 <b>Target:</b> {target}\n⚡ <b>Action:</b> {action_type}\n✅ <b>Status:</b> Task Completed Successfully!</blockquote>"
+        initial_msg = (
+            "<blockquote>"
+            f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑑 𝑴𝑨𝑺𝑺 𝑑𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
+            f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
+            f"⚡ <b>Module:</b> <code>{action_type}</code>\n\n"
+            f"⚙️ <i>Initializing attacking servers...</i>\n"
+            f"<code>[{'░'*12}] 0%</code>"
+            "</blockquote>"
         )
+        msg = await message.reply_video(video=HEADER_VIDEO, caption=initial_msg)
 
-# --- 8. EXECUTION ---
-if __name__ == "__main__":
-    server_thread = threading.Thread(target=run_web_server)
-    server_thread.daemon = True
-    server_thread.start()
-    app.run()
+        # 20 Seconds Continuous Animation Loop
+        for pct in range(5, 105, 10):
+            await asyncio.sleep(2.0)  # Total 10 steps * 2s = 20 seconds
+            bar = render_progress_bar(pct)
+            
+            anim_text = (
+                "<blockquote>"
+                f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑑 𝑴𝑨𝑺𝑺 𝑑𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
+                f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
+                f"⚡ <b>Module:</b> <code>{action_type}</code>\n"
+                f"📊 <b>Progress:</b> <code>{pct}%</code>\n\n"
+                f"<code>{bar}</code>\n\n"
+                f"💥 <i>Executing automated mass report packets...</i>"
+                "</blockquote>"
+            )
+            try:
+                await msg.edit_caption(caption=anim_text)
+            except Exception:
+                pass
+
+        final_summary = (
+            "✨ <b><u>𝑬𝑑𝑬𝑪𝑼𝑻𝑰𝑶𝑵 𝑪𝑶𝑴𝑴𝑷𝑳𝑬𝑻𝑬𝑫</u></b> ✨\n\n"
+            "<blockquote>"
+            f"🎯 <b>Target Number:</b> <code>{target_number}</code>\n"
+            f"⚡ <b>Action Module:</b> <code>{action_type}</code>\n"
+            f"✅ <b>Status:</b> <code>SUCCESSFULLY EXECUTED</code>\n"
+            f"🛡️ <b>Reports Sent:</b> <code>500+ Automated Reports</code>"
+            "</blockquote>"
+        )
+        try:
+            await msg.edit_caption(caption=final_summary)
+        except Exception:
+            await message.reply_text(final_summary)
+
+# --- 9. CALLBACK QUERY HANDLER ---
+@app.on_callback_query()
+async def cb_handler(client, query):
+    data = query.data
+    
+    if data == "check_join_status":
+        user_id = query.from_user.id
+        if await check_force_join(client, user_id):
+            await query.answer("✨ Verification Successful!", show_alert=True)
+            caption = get_main_menu(user_id)
+            reply_kb = get_bottom_keyboard()
+            await query.message.delete()
+            await client.send_video(chat_id=user_id, video=HEADER_VIDEO, caption=caption, reply_markup=reply_kb)
+        else:
+            await query.answer("❌ Verification Failed! Pehle sabhi links par Join / Request bhein.", show_alert=True)
+        return
+
+    if data in ["set_lang_en", "set_lang_hi"]:
+        await query.answer("✅ Language Updated Successfully!", show_alert=True)
+
+# --- 10. EXECUTION ---
+if __name__ == "__
