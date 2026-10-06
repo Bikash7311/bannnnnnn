@@ -301,11 +301,11 @@ async def handle_bottom_buttons(client, message):
     user_id = message.from_user.id
     text = message.text
 
-    # --- BAN & REPORT ACTIONS ---
-    if text in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report"]:
+    # --- BAN, UNBAN & REPORT PREMIUM ACTIONS ---
+    if text in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report", "🎯 Unban Target"]:
         user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
         
-        # Premium Check
+        # Premium Check (Includes Unban Target as Premium Feature)
         if user_id != OWNER_ID and not user_data.get('is_premium', False):
             ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
             restricted_text = (
@@ -329,18 +329,15 @@ async def handle_bottom_buttons(client, message):
         if current_time - last_time < COOLDOWN_TIME:
             remaining = int(COOLDOWN_TIME - (current_time - last_time))
             mins, secs = divmod(remaining, 60)
-            await message.reply_text(f"⏳ <b><u>𝑪𝑶𝑶𝑳𝑫𝑶𝑾𝑵 𝑨𝑪𝑻𝑰𝑽𝑬!</u></b>\n\n<blockquote><i>Please wait {mins}m {secs}s before executing another ban request!</i></blockquote>")
+            await message.reply_text(f"⏳ <b><u>𝑪𝑶𝑶𝑳𝑫𝑶𝑾𝑵 𝑨𝑪𝑻𝑰𝑽𝑬!</u></b>\n\n<blockquote><i>Please wait {mins}m {secs}s before executing another request!</i></blockquote>")
             return
 
         user_states[user_id] = text
-        prompt_text = "💥 💥 <b>Send the target WhatsApp number (e.g. +234...)</b> 💀 💀"
-        await message.reply_video(video=HEADER_VIDEO, caption=f"<blockquote>{prompt_text}</blockquote>")
-        return
-
-    # --- UNBAN TARGET ---
-    if text == "🎯 Unban Target":
-        user_states[user_id] = text
-        prompt_text = "🎯 <b>Send the whatsapp Number You want to Unban (e.g. +234...)</b> 😱"
+        if text == "🎯 Unban Target":
+            prompt_text = "🎯 <b>Send the whatsapp Number You want to Unban (e.g. +234...)</b> 😱"
+        else:
+            prompt_text = "💥 💥 <b>Send the target WhatsApp number (e.g. +234...)</b> 💀 💀"
+            
         await message.reply_video(video=HEADER_VIDEO, caption=f"<blockquote>{prompt_text}</blockquote>")
         return
 
@@ -352,12 +349,13 @@ async def handle_bottom_buttons(client, message):
         premium_text = (
             "💎 <b><u>𝑷𝑼𝑹𝑪𝑯𝑨𝑺𝑬 𝑷𝑹𝑬𝑴𝑰𝑼𝑴 𝑨𝑪𝑪𝑬𝑺𝑺</u></b> 💎\n\n"
             "<blockquote>"
-            "⚡ <b>Unlock all powerful Ban & Mass Reporting features!</b>\n\n"
+            "⚡ <b>Unlock all powerful Ban, Unban & Mass Reporting features!</b>\n\n"
             f"👤 <b>Your User ID:</b> <code>{user_id}</code>\n"
             f"👑 <b>Current Status:</b> <code>{status_text}</code>\n\n"
             "✨ <b><u>PREMIUM BENEFITS:</u></b>\n"
             "• 💀 Permanent WhatsApp Ban Access\n"
             "• ⏳ Temporary WhatsApp Ban Access\n"
+            "• 🎯 Unban WhatsApp Target Access\n"
             "• 💥 Mass Reporting 500+ Packets\n"
             "• ⚡ No Feature Limits & Fast Server\n\n"
             f"📩 <b>Contact Owner to Buy:</b> @{OWNER_USERNAME}"
@@ -370,7 +368,7 @@ async def handle_bottom_buttons(client, message):
         return
 
     # --- BOT STATUS ---
-    if text == "🗄️ Bot Status":
+    if text == "🗄️️ Bot Status":
         uptime_str = get_readable_time(int(time.time() - START_TIME))
         total_users = get_total_users_count()
         status_msg = (
@@ -436,7 +434,7 @@ async def handle_bottom_buttons(client, message):
         target_number = text.strip()
         
         # Record Cooldown timestamp for paid actions
-        if action_type in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report"]:
+        if action_type in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report", "🎯 Unban Target"]:
             cooldowns[user_id] = time.time()
 
         initial_msg = (
@@ -444,7 +442,7 @@ async def handle_bottom_buttons(client, message):
             f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
             f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
             f"⚡ <b>Module:</b> <code>{action_type}</code>\n\n"
-            f"⚙️ <i>Initializing attacking servers...</i>\n"
+            f"⚙️️ <i>Initializing attacking servers...</i>\n"
             f"<code>[{'░'*12}] 0%</code>"
             "</blockquote>"
         )
