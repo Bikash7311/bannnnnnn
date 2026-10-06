@@ -1,4 +1,3 @@
-import sys
 import asyncio
 import json
 import os
@@ -116,7 +115,7 @@ async def check_force_join(client, user_id):
 
 def get_force_join_menu():
     text = (
-        "⚠️ <b><u>ACCESS DENIED - MANDATORY JOIN REQUIRED</u></b> ⚠️\n\n"
+        "⚠️️ <b><u>ACCESS DENIED - MANDATORY JOIN REQUIRED</u></b> ⚠️\n\n"
         "<i>✨ Bot features use karne ke liye Main Channel Join karein aur Baaki Links par Request Send karein!</i>\n\n"
         "1️⃣ <b>📢 Main Channel (Join Mandatory)</b>\n"
         "2️⃣ <b>💬 Discussion Group (Send Request)</b>\n"
@@ -144,9 +143,11 @@ def get_main_menu(user_id):
     ref_str = f"{user_data.get('referrals', 0)}/10"
     u_str = str(user_id)
 
-    # Full Screen Text Box Layout (25 Width Box)
+    # Option 4 Stylish Title Layout
     caption = (
-        "🔥 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑿 𝑩𝑨𝑵 𝑩𝑶𝑻 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b> 🔥\n\n"
+        "✦ ─────────────── ✦\n"
+        "⚡️ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
+        "✦ ─────────────── ✦\n\n"
         "• 💀 <b>Permanent Ban</b>\n"
         "• ⏳ <b>Temporary Ban</b>\n"
         "• 🔍 <b>Ban Status Checker</b>\n"
@@ -180,7 +181,10 @@ async def stats_cmd(client, message):
     free_users = total_users - premium_users
     
     stats_text = (
-        "📊 <b><u>NOBITA X BOT STATS</u></b>\n\n"
+        "✦ ─────────────── ✦\n"
+        "⚡️ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
+        "✦ ─────────────── ✦\n\n"
+        "📊 <b><u>BOT STATS</u></b>\n\n"
         f"👥 <b>Total Users:</b> <code>{total_users}</code>\n"
         f"💎 <b>Premium Users:</b> <code>{premium_users}</code>\n"
         f"🪙 <b>Free Users:</b> <code>{free_users}</code>"
@@ -301,7 +305,9 @@ async def handle_input(client, message):
             bar = render_progress_bar(pct)
             
             table_text = (
-                "🔥 <b><u>NOBITA X BAN BOT PREMIUM</u></b> 🔥\n\n"
+                "✦ ─────────────── ✦\n"
+                "⚡️ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
+                "✦ ─────────────── ✦\n\n"
                 "<code>┌─────────────────────────┐\n"
                 f"│ Target   │ {target[:11]:<11} │\n"
                 "├─────────────────────────┤\n"
