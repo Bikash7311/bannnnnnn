@@ -183,11 +183,11 @@ def get_main_menu(user_id):
 def get_bottom_keyboard():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("💀 Permanent Ban"), KeyboardButton("⏳ Temporary Ban")],
-            [KeyboardButton("💥 Mass Report"), KeyboardButton("🎯 Unban Target")],
-            [KeyboardButton("💎 Purchase Premium"), KeyboardButton("🚀 Invite a Friend")],
-            [KeyboardButton("🗄️ Bot Status"), KeyboardButton("🌐 Language")],
-            [KeyboardButton("🏆 Thanks To")]
+            [KeyboardButton("🔴 𝑷𝒆𝒓𝒎𝒂𝒏𝒆𝒏𝒕 𝑩𝒂𝒏"), KeyboardButton("⏳ 𝑻𝒆𝒎𝒑𝒐𝒓𝒂𝒓𝒚 𝑩𝒂𝒏")],
+            [KeyboardButton("💥 𝑴𝒂𝒔𝒔 𝑹𝒆𝒑𝒐𝒓𝒕"), KeyboardButton("🎯 𝑼𝒏𝒃𝒂𝒏 𝑻𝒂𝒓𝒈𝒆𝒕")],
+            [KeyboardButton("💎 𝑷𝒖𝒓𝒄𝒉𝒂𝒔𝒆 𝑷𝒓𝒆𝒎𝒊𝒖𝒎"), KeyboardButton("🚀 𝑰𝒏𝒗𝒊𝒕𝒆 𝒂 𝑭𝒓𝒊𝒆𝒏𝒅")],
+            [KeyboardButton("🤖 𝑩𝒐𝒕 𝑺𝒕𝒂𝒕𝒖𝒔"), KeyboardButton("🌐 𝑳𝒂𝒏𝒈𝒖𝒂𝒈𝒆")],
+            [KeyboardButton("🏆 𝑻𝒉𝒂𝒏𝒌𝒔 𝑻𝒐")]
         ],
         resize_keyboard=True
     )
@@ -195,15 +195,15 @@ def get_bottom_keyboard():
 # --- 7. COMMAND HANDLERS ---
 @app.on_message(filters.command("stats") & filters.user(OWNER_ID))
 async def stats_cmd(client, message):
-    total_users = get_total_users_count()
+    tot_users = get_total_users_count()
     premium_users = sum(1 for u in users_db.values() if u.get('is_premium', False))
-    free_users = total_users - premium_users
+    free_users = tot_users - premium_users
     uptime_str = get_readable_time(int(time.time() - START_TIME))
     
     stats_text = (
         "📊 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑩𝑶𝑻 𝑺𝑻𝑨𝑻𝑰𝑺𝑻𝑰𝑪𝑺</u></b> 📊\n\n"
         "<blockquote>"
-        f"👥 <b>Total Users:</b> <code>{total_users}</code>\n"
+        f"👥 <b>Total Users:</b> <code>{tot_users}</code>\n"
         f"💎 <b>Premium Users:</b> <code>{premium_users}</code>\n"
         f"🪙 <b>Free Users:</b> <code>{free_users}</code>\n"
         f"⏱️ <b>Uptime:</b> <code>{uptime_str}</code>"
@@ -302,10 +302,15 @@ async def handle_bottom_buttons(client, message):
     text = message.text
 
     # --- BAN, UNBAN & REPORT PREMIUM ACTIONS ---
-    if text in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report", "🎯 Unban Target"]:
+    if text in [
+        "🔴 𝑷𝒆𝒓𝒎𝒂𝒏𝒆𝒏𝒕 𝑩𝒂𝒏", "💀 Permanent Ban",
+        "⏳ 𝑻𝒆𝒎𝒑𝒐𝒓𝒂𝒓𝒚 𝑩𝒂𝒏", "⏳ Temporary Ban",
+        "💥 𝑴𝒂𝒔𝒔 𝑹𝒆𝒑𝒐𝒓𝒕", "💥 Mass Report",
+        "🎯 𝑼𝒏𝒃𝒂𝒏 𝑻𝒂𝒓𝒈𝒆𝒕", "🎯 Unban Target"
+    ]:
         user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
         
-        # Premium Check (Includes Unban Target as Premium Feature)
+        # Premium Check
         if user_id != OWNER_ID and not user_data.get('is_premium', False):
             ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
             restricted_text = (
@@ -333,7 +338,7 @@ async def handle_bottom_buttons(client, message):
             return
 
         user_states[user_id] = text
-        if text == "🎯 Unban Target":
+        if "Unban" in text:
             prompt_text = "🎯 <b>Send the whatsapp Number You want to Unban (e.g. +234...)</b> 😱"
         else:
             prompt_text = "💥 💥 <b>Send the target WhatsApp number (e.g. +234...)</b> 💀 💀"
@@ -342,7 +347,7 @@ async def handle_bottom_buttons(client, message):
         return
 
     # --- PURCHASE PREMIUM ---
-    if text == "💎 Purchase Premium":
+    if text in ["💎 𝑷𝒖𝒓𝒄𝒉𝒂𝒔𝒆 𝑷𝒓𝒆𝒎𝒊𝒖𝒎", "💎 Purchase Premium"]:
         user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
         status_text = "💎 PREMIUM USER" if user_data.get('is_premium', False) else "🪙 FREE USER"
         
@@ -368,15 +373,15 @@ async def handle_bottom_buttons(client, message):
         return
 
     # --- BOT STATUS ---
-    if text == "🗄️️ Bot Status":
+    if text in ["🤖 𝑩𝒐𝒕 𝑺𝒕𝒂𝒕𝒖𝒔", "🗄️ Bot Status", "🗄 Bot Status"]:
         uptime_str = get_readable_time(int(time.time() - START_TIME))
-        total_users = get_total_users_count()
+        tot_users = get_total_users_count()
         status_msg = (
             "🤖 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑩𝑶𝑻 𝑺𝑻𝑨𝑻𝑼𝑺</u></b> 🗄️\n\n"
             "<blockquote>"
             f"⚡ <b>System Status:</b> <code>ONLINE & RUNNING</code>\n"
-            f"⏱️ <b>Bot Uptime:</b> <code>{uptime_str}</code>\n"
-            f"👥 <b>Total Active Users:</b> <code>{total_users}</code>\n"
+            f"⏱️️ <b>Bot Uptime:</b> <code>{uptime_str}</code>\n"
+            f"👥 <b>Total Active Users:</b> <code>{tot_users}</code>\n"
             f"🛡️ <b>Protection Routine:</b> <code>ACTIVE</code>"
             "</blockquote>"
         )
@@ -384,7 +389,7 @@ async def handle_bottom_buttons(client, message):
         return
 
     # --- INVITE A FRIEND ---
-    if text == "🚀 Invite a Friend":
+    if text in ["🚀 𝑰𝒏𝒗𝒊𝒕𝒆 𝒂 𝑭𝒓𝒊𝒆𝒏𝒅", "🚀 Invite a Friend"]:
         ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
         user_data = users_db.get(user_id, {'referrals': 0})
         invite_text = (
@@ -404,7 +409,7 @@ async def handle_bottom_buttons(client, message):
         return
 
     # --- LANGUAGE ---
-    if text == "🌐 Language":
+    if text in ["🌐 𝑳𝒂𝒏𝒈𝒖𝒂𝒈𝒆", "🌐 Language"]:
         lang_text = (
             "🌐 <b><u>𝑺𝑬𝑳𝑬𝑪𝑻 𝒀𝑶𝑼𝑴 𝑳𝑨𝑵𝑮𝑼𝑨𝑮𝑬</u></b>\n\n"
             "<blockquote><i>Choose your preferred language for bot interface:</i></blockquote>"
@@ -416,7 +421,7 @@ async def handle_bottom_buttons(client, message):
         return
 
     # --- THANKS TO ---
-    if text == "🏆 Thanks To":
+    if text in ["🏆 𝑻𝒉𝒂𝒏𝒌𝒔 𝑻𝒐", "🏆 Thanks To"]:
         thanks_text = (
             "🏆 <b><u>𝑺𝑴𝑬𝑪𝑰𝑨𝑳 𝑻𝑯𝑨𝑵𝑴𝑺 𝑻𝑶</u></b>\n\n"
             "<blockquote>"
@@ -434,15 +439,14 @@ async def handle_bottom_buttons(client, message):
         target_number = text.strip()
         
         # Record Cooldown timestamp for paid actions
-        if action_type in ["💀 Permanent Ban", "⏳ Temporary Ban", "💥 Mass Report", "🎯 Unban Target"]:
-            cooldowns[user_id] = time.time()
+        cooldowns[user_id] = time.time()
 
         initial_msg = (
             "<blockquote>"
             f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
             f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
             f"⚡ <b>Module:</b> <code>{action_type}</code>\n\n"
-            f"⚙️️ <i>Initializing attacking servers...</i>\n"
+            f"⚙️ <i>Initializing attacking servers...</i>\n"
             f"<code>[{'░'*12}] 0%</code>"
             "</blockquote>"
         )
