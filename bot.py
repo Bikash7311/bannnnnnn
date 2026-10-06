@@ -14,7 +14,7 @@ except RuntimeError:
     asyncio.set_event_loop(loop)
 
 from hydrogram import Client, filters
-from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest, InputMediaVideo
+from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest
 from hydrogram.errors import UserNotParticipant
 
 # --- 2. CONFIGURATION ---
@@ -66,7 +66,6 @@ def save_json(filepath, data):
         json.dump(list(data) if isinstance(data, set) else data, f, indent=2)
 
 approved_req_users = load_json(REQ_FILE, set())
-# Users DB Structure: {"user_id": {"referrals": 0, "is_premium": False}}
 raw_users_db = load_json(USERS_FILE, {})
 users_db = {int(k): v for k, v in raw_users_db.items()}
 
@@ -145,9 +144,9 @@ def get_main_menu(user_id):
     ref_str = f"{user_data.get('referrals', 0)}/10"
     u_str = str(user_id)
 
-    # Full screen styled code box matching exact frame width
+    # Full Screen Text Box Layout (25 Width Box)
     caption = (
-        "🔥 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑑 𝑩𝑨𝑵 𝑩𝑶𝑻 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b> 🔥\n\n"
+        "🔥 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑿 𝑩𝑨𝑵 𝑩𝑶𝑻 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b> 🔥\n\n"
         "• 💀 <b>Permanent Ban</b>\n"
         "• ⏳ <b>Temporary Ban</b>\n"
         "• 🔍 <b>Ban Status Checker</b>\n"
