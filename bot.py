@@ -14,7 +14,7 @@ except RuntimeError:
     asyncio.set_event_loop(loop)
 
 from hydrogram import Client, filters
-from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest
+from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest, InputMediaVideo
 from hydrogram.errors import UserNotParticipant
 
 # --- 2. CONFIGURATION ---
@@ -30,7 +30,8 @@ MANDATORY_CHANNEL = "nobitabanxunban"
 MANDATORY_GROUP_LINK = "https://t.me/chatgctest"
 REQ_CHANNEL_LINK = "https://t.me/+vM_Qw32vxK81NmNl"
 
-HEADER_VIDEO = "https://example.com/your_video.mp4"
+# Direct Video Link
+HEADER_VIDEO = "https://videotourl.com/videos/1791282196960-032c9029-1397-468f-a61f-d9ce71d18614.mp4"
 
 # CLIENT INITIALIZATION
 app = Client("NobitaBanBotSession", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -46,25 +47,29 @@ def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# --- 4. APPROVED REQUEST USERS FILE SYSTEM ---
+# --- 4. PERSISTENT STORAGE (USERS & APPROVED JOIN REQUESTS) ---
 REQ_FILE = "approved_users.json"
+USERS_FILE = "users_db.json"
 
-def load_approved_users():
-    if os.path.exists(REQ_FILE):
+def load_json(filepath, default):
+    if os.path.exists(filepath):
         try:
-            with open(REQ_FILE, "r") as f:
-                return set(json.load(f))
+            with open(filepath, "r") as f:
+                data = json.load(f)
+                return set(data) if isinstance(default, set) else data
         except Exception:
-            return set()
-    return set()
+            return default
+    return default
 
-def save_approved_user(user_id):
-    approved_req_users.add(user_id)
-    with open(REQ_FILE, "w") as f:
-        json.dump(list(approved_req_users), f)
+def save_json(filepath, data):
+    with open(filepath, "w") as f:
+        json.dump(list(data) if isinstance(data, set) else data, f, indent=2)
 
-approved_req_users = load_approved_users()
-users_db = {}
+approved_req_users = load_json(REQ_FILE, set())
+# Users DB Structure: {"user_id": {"referrals": 0, "is_premium": False}}
+raw_users_db = load_json(USERS_FILE, {})
+users_db = {int(k): v for k, v in raw_users_db.items()}
+
 cooldowns = {}
 user_states = {}
 COOLDOWN_TIME = 600
@@ -74,12 +79,13 @@ COOLDOWN_TIME = 600
 @app.on_chat_join_request()
 async def track_join_requests(client, chat_join_request: ChatJoinRequest):
     user_id = chat_join_request.from_user.id
-    save_approved_user(user_id)
+    approved_req_users.add(user_id)
+    save_json(REQ_FILE, approved_req_users)
     print(f"✅ [JOIN REQUEST APPROVED] User ID: {user_id}")
 
 # --- 6. HELPER FUNCTIONS ---
 
-def render_progress_bar(percent: int, length: int = 10) -> str:
+def render_progress_bar(percent: int, length: int = 12) -> str:
     filled = int(length * percent // 100)
     bar = "█" * filled + "░" * (length - filled)
     return f"[{bar}] {percent}%"
@@ -88,7 +94,6 @@ async def check_force_join(client, user_id):
     if user_id == OWNER_ID:
         return True
     
-    # 1. Check Mandatory Channel Membership
     try:
         await client.get_chat_member(MANDATORY_CHANNEL, user_id)
     except UserNotParticipant:
@@ -96,15 +101,14 @@ async def check_force_join(client, user_id):
     except Exception:
         pass
 
-    # 2. Check if user sent a join request earlier
     if user_id in approved_req_users:
         return True
 
-    # 3. Fallback Check: Direct membership in discussion group
     try:
         chat_member = await client.get_chat_member("chatgctest", user_id)
         if chat_member:
-            save_approved_user(user_id)
+            approved_req_users.add(user_id)
+            save_json(REQ_FILE, approved_req_users)
             return True
     except Exception:
         pass
@@ -114,10 +118,10 @@ async def check_force_join(client, user_id):
 def get_force_join_menu():
     text = (
         "⚠️ <b><u>ACCESS DENIED - MANDATORY JOIN REQUIRED</u></b> ⚠️\n\n"
-        "<i>Bot features use karne ke liye Main Channel Join karein aur Baaki Links par Request Send karein!</i>\n\n"
-        "1️⃣ <b>Main Channel (Join Mandatory)</b>\n"
-        "2️⃣ <b>Discussion Group (Send Request)</b>\n"
-        "3️⃣ <b>Private Channel (Send Request)</b>\n\n"
+        "<i>✨ Bot features use karne ke liye Main Channel Join karein aur Baaki Links par Request Send karein!</i>\n\n"
+        "1️⃣ <b>📢 Main Channel (Join Mandatory)</b>\n"
+        "2️⃣ <b>💬 Discussion Group (Send Request)</b>\n"
+        "3️⃣ <b>🔒 Private Channel (Send Request)</b>\n\n"
         "✅ <i>Sabhi complete karne ke baad <b>'Try Again'</b> button par click karein.</i>"
     )
     buttons = InlineKeyboardMarkup([
@@ -132,25 +136,29 @@ def get_main_menu(user_id):
     user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
     
     if user_id == OWNER_ID:
-        status_str = "⚡ 𝑶𝑾𝑵𝑬𝑹 ⚡"
-    elif user_data['is_premium']:
-        status_str = "💎 𝑷𝑹𝑬𝑴𝑰𝑼𝑴"
+        status_str = "⚡ OWNER ⚡"
+    elif user_data.get('is_premium', False):
+        status_str = "💎 PREMIUM"
     else:
-        status_str = "🪙 𝑭𝑹𝑬𝑬"
+        status_str = "🪙 FREE"
 
+    ref_str = f"{user_data.get('referrals', 0)}/10"
+    u_str = str(user_id)
+
+    # Full screen styled code box matching exact frame width
     caption = (
-        "🔥 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑿 𝑩𝑨𝑵 𝑩𝑶𝑻 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b> 🔥\n\n"
-        "• 💀 Permanent Ban\n"
-        "• ⏳ Temporary Ban\n"
-        "• 🔍 Ban Status Checker\n"
-        "• 💥 Mass Reporting System\n\n"
-        "<code>┌───────────────┬───────────────┐\n"
-        "│      Field    │     Value     │\n"
-        "├───────────────┼───────────────┤\n"
-        f"│ 👤 User       │ {user_id:<13} │\n"
-        f"│ 👑 Status     │ {status_str:<13} │\n"
-        f"│ 🔮 Referrals  │ {str(user_data['referrals'])+'/10':<13} │\n"
-        "└───────────────┴───────────────┘</code>\n\n"
+        "🔥 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑑 𝑩𝑨𝑵 𝑩𝑶𝑻 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b> 🔥\n\n"
+        "• 💀 <b>Permanent Ban</b>\n"
+        "• ⏳ <b>Temporary Ban</b>\n"
+        "• 🔍 <b>Ban Status Checker</b>\n"
+        "• 💥 <b>Mass Reporting System</b>\n\n"
+        "<code>┌─────────────────────────┐\n"
+        f"│ Field     │ Value       │\n"
+        "├─────────────────────────┤\n"
+        f"│ 👤 User   │ {u_str:<11} │\n"
+        f"│ 👑 Status │ {status_str:<11} │\n"
+        f"│ 🔮 Refs   │ {ref_str:<11} │\n"
+        "└─────────────────────────┘</code>\n\n"
         "📸 <i>Choose an action below:</i>"
     )
     
@@ -169,7 +177,7 @@ def get_main_menu(user_id):
 @app.on_message(filters.command("stats") & filters.user(OWNER_ID))
 async def stats_cmd(client, message):
     total_users = len(users_db)
-    premium_users = sum(1 for u in users_db.values() if u['is_premium'])
+    premium_users = sum(1 for u in users_db.values() if u.get('is_premium', False))
     free_users = total_users - premium_users
     
     stats_text = (
@@ -178,12 +186,12 @@ async def stats_cmd(client, message):
         f"💎 <b>Premium Users:</b> <code>{premium_users}</code>\n"
         f"🪙 <b>Free Users:</b> <code>{free_users}</code>"
     )
-    await message.reply(stats_text)
+    await message.reply_video(video=HEADER_VIDEO, caption=stats_text)
 
 @app.on_message(filters.command("addpremium") & filters.user(OWNER_ID))
 async def add_premium_cmd(client, message):
     if len(message.command) < 2:
-        await message.reply("❌ <b>Usage:</b> <code>/addpremium <user_id></code>")
+        await message.reply_text("❌ <b>Usage:</b> <code>/addpremium <user_id></code>")
         return
     try:
         target_id = int(message.command[1])
@@ -191,32 +199,34 @@ async def add_premium_cmd(client, message):
             users_db[target_id] = {'referrals': 0, 'is_premium': True}
         else:
             users_db[target_id]['is_premium'] = True
-        await message.reply(f"✅ User <code>{target_id}</code> upgraded to 💎 <b>PREMIUM</b>!")
+        save_json(USERS_FILE, users_db)
+        await message.reply_text(f"✅ User <code>{target_id}</code> upgraded to 💎 <b>PREMIUM</b>!")
     except ValueError:
-        await message.reply("❌ Invalid User ID.")
+        await message.reply_text("❌ Invalid User ID.")
 
 @app.on_message(filters.command("rempremium") & filters.user(OWNER_ID))
 async def rem_premium_cmd(client, message):
     if len(message.command) < 2:
-        await message.reply("❌ <b>Usage:</b> <code>/rempremium <user_id></code>")
+        await message.reply_text("❌ <b>Usage:</b> <code>/rempremium <user_id></code>")
         return
     try:
         target_id = int(message.command[1])
         if target_id in users_db:
             users_db[target_id]['is_premium'] = False
-            await message.reply(f"🔻 User <code>{target_id}</code> Premium status removed!")
+            save_json(USERS_FILE, users_db)
+            await message.reply_text(f"🔻 User <code>{target_id}</code> Premium status removed!")
         else:
-            await message.reply("❌ User not found in database.")
+            await message.reply_text("❌ User not found in database.")
     except ValueError:
-        await message.reply("❌ Invalid User ID.")
+        await message.reply_text("❌ Invalid User ID.")
 
 @app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
 async def broadcast_cmd(client, message):
     if not message.reply_to_message:
-        await message.reply("❌ <b>Reply to a message to broadcast.</b>")
+        await message.reply_text("❌ <b>Reply to a message to broadcast.</b>")
         return
     
-    msg = await message.reply("🚀 <b>Starting Broadcast...</b>")
+    msg = await message.reply_text("🚀 <b>Starting Broadcast...</b>")
     success, failed = 0, 0
     
     for uid in list(users_db.keys()):
@@ -240,24 +250,34 @@ async def start_cmd(client, message):
     
     if not await check_force_join(client, user_id):
         text, buttons = get_force_join_menu()
-        await message.reply_text(text, reply_markup=buttons)
+        await message.reply_video(video=HEADER_VIDEO, caption=text, reply_markup=buttons)
         return
 
-    if user_id not in users_db:
+    # Referral Tracking
+    is_new = user_id not in users_db
+    if is_new:
         users_db[user_id] = {'referrals': 0, 'is_premium': False}
         if len(message.command) > 1:
             try:
                 ref_by = int(message.command[1])
                 if ref_by in users_db and ref_by != user_id:
-                    users_db[ref_by]['referrals'] += 1
+                    users_db[ref_by]['referrals'] = users_db[ref_by].get('referrals', 0) + 1
                     if users_db[ref_by]['referrals'] >= 10:
                         users_db[ref_by]['is_premium'] = True
+                    try:
+                        await client.send_message(
+                            ref_by, 
+                            f"🎉 <b>New Referral Joined!</b>\nTotal Referrals: <code>{users_db[ref_by]['referrals']}/10</code>"
+                        )
+                    except Exception:
+                        pass
             except Exception:
                 pass
+        save_json(USERS_FILE, users_db)
 
-    msg = await message.reply("⚙️ <i>Initializing System...</i>")
+    msg = await message.reply_text("⚙️ <i>Initializing System...</i>")
     await asyncio.sleep(0.3)
-    await msg.edit("🔥 <i>Finalizing Animations...</i>")
+    await msg.edit("🔥 <i>Loading Video Animation...</i>")
     await asyncio.sleep(0.3)
     await msg.delete()
 
@@ -275,30 +295,30 @@ async def handle_input(client, message):
         action_type = user_states.pop(user_id)
         target = message.text.strip()
         
-        msg = await message.reply("⏳ <b>Please wait...</b>")
+        msg = await message.reply_text("⏳ <b>Processing Task...</b>")
         
         for pct in [20, 40, 60, 80, 100]:
-            await asyncio.sleep(0.8)
+            await asyncio.sleep(0.6)
             bar = render_progress_bar(pct)
             
             table_text = (
-                "<b>NOBITA X BAN BOT PREMIUM</b>\n\n"
-                "<code>┌───────────────┬───────────────┐\n"
-                f"│ Target Input  │ {target[:8]:<13} │\n"
-                "├───────────────┼───────────────┤\n"
-                f"│ Action        │ {action_type:<13} │\n"
-                "├───────────────┼───────────────┤\n"
-                f"│ Progress      │ {bar} │\n"
-                "└───────────────┴───────────────┘</code>"
+                "🔥 <b><u>NOBITA X BAN BOT PREMIUM</u></b> 🔥\n\n"
+                "<code>┌─────────────────────────┐\n"
+                f"│ Target   │ {target[:11]:<11} │\n"
+                "├─────────────────────────┤\n"
+                f"│ Action   │ {action_type[:11]:<11} │\n"
+                "├─────────────────────────┤\n"
+                f"│ Status   │ {bar:<11} │\n"
+                "└─────────────────────────┘</code>"
             )
             await msg.edit_text(table_text)
 
         final_output = (
             "✉️ <b>Action Execution Completed</b>\n\n"
             "📜 <i>Summary Log Output:</i>\n\n"
-            f"<blockquote><b>Target:</b> {target}\n"
-            f"<b>Action Module:</b> {action_type}\n"
-            "<b>Status:</b> Interface routine rendered successfully.</blockquote>"
+            f"<blockquote>🎯 <b>Target:</b> {target}\n"
+            f"⚡ <b>Action Module:</b> {action_type}\n"
+            "✅ <b>Status:</b> Interface routine rendered successfully.</blockquote>"
         )
         back_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_menu")]])
         await msg.edit_text(final_output, reply_markup=back_btn)
@@ -319,7 +339,7 @@ async def cb_handler(client, query):
             except Exception:
                 await query.message.edit_text(text=caption, reply_markup=buttons)
         else:
-            await query.answer("❌ Aapne 1st channel join nahi kiya ya request send nahi kiya!", show_alert=True)
+            await query.answer("❌ Aapne channels join nahi kiye ya request send nahi ki!", show_alert=True)
         return
 
     if data == "back_to_menu":
@@ -337,7 +357,7 @@ async def cb_handler(client, query):
         invite_text = (
             "🚀 <b><u>INVITE & EARN PREMIUM</u></b>\n\n"
             "💡 <i>Invite 10 friends to automatically unlock 💎 PREMIUM Access!</i>\n\n"
-            f"📊 <b>Your Referrals:</b> <code>{user_data['referrals']}/10</code>\n"
+            f"📊 <b>Your Referrals:</b> <code>{user_data.get('referrals', 0)}/10</code>\n"
             f"🔗 <b>Your Invite Link:</b>\n<code>{ref_link}</code>"
         )
         buttons = InlineKeyboardMarkup([
@@ -354,12 +374,12 @@ async def cb_handler(client, query):
     if data in ["ban_perm", "ban_temp", "mass_report", "unban"]:
         user_data = users_db.get(user_id, {'referrals': 0, 'is_premium': False})
         
-        if user_id != OWNER_ID and not user_data['is_premium']:
+        if user_id != OWNER_ID and not user_data.get('is_premium', False):
             ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
             restricted_text = (
                 "🚫 <b><u>ACCESS RESTRICTED</u></b> 🚫\n\n"
                 "⚠️ <i>You are currently a 🪙 FREE User. Upgrade to 💎 PREMIUM to use this feature!</i>\n\n"
-                f"📊 <b>Your Referrals:</b> <code>{user_data['referrals']}/10</code>\n\n"
+                f"📊 <b>Your Referrals:</b> <code>{user_data.get('referrals', 0)}/10</code>\n\n"
                 "🎯 <b><u>HOW TO UNLOCK PREMIUM?</u></b>\n"
                 f"1️⃣ <b>Referral Method:</b> Invite 10 friends using your link:\n<code>{ref_link}</code>\n\n"
                 f"2️⃣ <b>Direct Method:</b> Contact Owner to buy Premium."
