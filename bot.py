@@ -3,6 +3,7 @@ import json
 import os
 import time
 import threading
+from datetime import datetime
 from flask import Flask
 
 # --- 1. EVENT LOOP FIX ---
@@ -102,6 +103,10 @@ def get_readable_time(seconds: int) -> str:
     if s: time_str += f"{s}s"
     return time_str if time_str else "0s"
 
+def get_total_users_count():
+    BASE_USER_COUNT = 6745
+    return BASE_USER_COUNT + len(users_db)
+
 async def check_force_join(client, user_id):
     if user_id == OWNER_ID:
         return True
@@ -190,7 +195,7 @@ def get_bottom_keyboard():
 # --- 7. COMMAND HANDLERS ---
 @app.on_message(filters.command("stats") & filters.user(OWNER_ID))
 async def stats_cmd(client, message):
-    total_users = len(users_db)
+    total_users = get_total_users_count()
     premium_users = sum(1 for u in users_db.values() if u.get('is_premium', False))
     free_users = total_users - premium_users
     uptime_str = get_readable_time(int(time.time() - START_TIME))
@@ -367,7 +372,7 @@ async def handle_bottom_buttons(client, message):
     # --- BOT STATUS ---
     if text == "🗄️ Bot Status":
         uptime_str = get_readable_time(int(time.time() - START_TIME))
-        total_users = len(users_db)
+        total_users = get_total_users_count()
         status_msg = (
             "🤖 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑩𝑶𝑻 𝑺𝑻𝑨𝑻𝑼𝑺</u></b> 🗄️\n\n"
             "<blockquote>"
@@ -436,7 +441,7 @@ async def handle_bottom_buttons(client, message):
 
         initial_msg = (
             "<blockquote>"
-            f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑑𝑶𝑹𝑻</u></b>\n\n"
+            f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
             f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
             f"⚡ <b>Module:</b> <code>{action_type}</code>\n\n"
             f"⚙️ <i>Initializing attacking servers...</i>\n"
@@ -452,7 +457,7 @@ async def handle_bottom_buttons(client, message):
             
             anim_text = (
                 "<blockquote>"
-                f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑑𝑶𝑹𝑻</u></b>\n\n"
+                f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
                 f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
                 f"⚡ <b>Module:</b> <code>{action_type}</code>\n"
                 f"📊 <b>Progress:</b> <code>{pct}%</code>\n\n"
