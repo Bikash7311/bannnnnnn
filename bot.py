@@ -13,7 +13,7 @@ except RuntimeError:
     asyncio.set_event_loop(loop)
 
 from hydrogram import Client, filters
-from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest
+from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatJoinRequest, WebAppInfo
 from hydrogram.errors import UserNotParticipant
 
 # --- 2. CONFIGURATION ---
@@ -35,18 +35,110 @@ HEADER_VIDEO = "https://videotourl.com/videos/1791282196960-032c9029-1397-468f-a
 # CLIENT INITIALIZATION
 app = Client("NobitaBanBotSession", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# --- 3. DUMMY FLASK SERVER (RENDER PORT BINDING FIX) ---
+# --- 3. FLASK SERVER & STYLISH WEB APP INTERFACE ---
 web_app = Flask(__name__)
 
 @web_app.route('/')
 def home():
-    return "Nobita Ban Bot is Active and Running Perfectly!"
+    return "⚡ NOBITA BAN X UNBAN PREMIUM BOT IS ACTIVE & RUNNING ⚡"
+
+# Web App HTML UI Route for Full Screen Experience
+@web_app.route('/webapp')
+def webapp_interface():
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>✨ NOBITA BAN X UNBAN PREMIUM BOT ✨</title>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <style>
+            * {{
+                box-sizing: border-box;
+            }}
+            body {{
+                margin: 0;
+                padding: 0;
+                background-color: #0d1117;
+                color: #ffffff;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                min-height: 100vh;
+            }}
+            .video-container {{
+                width: 100%;
+                max-height: 45vh;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            }}
+            video {{
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }}
+            .content {{
+                padding: 20px;
+                width: 100%;
+                max-width: 500px;
+                text-align: center;
+            }}
+            .title {{
+                font-size: 18px;
+                font-weight: bold;
+                color: #58a6ff;
+                margin-bottom: 20px;
+                text-shadow: 0 0 10px rgba(88, 166, 255, 0.4);
+            }}
+            .btn {{
+                background: linear-gradient(135deg, #1f6beb, #8957e5);
+                color: white;
+                border: none;
+                padding: 14px;
+                margin: 8px 0;
+                width: 100%;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+                box-shadow: 0 4px 10px rgba(31, 107, 235, 0.3);
+                transition: transform 0.1s ease;
+            }}
+            .btn:active {{
+                transform: scale(0.98);
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="video-container">
+            <video autoplay loop muted playsinline src="{HEADER_VIDEO}"></video>
+        </div>
+        
+        <div class="content">
+            <div class="title">✦ ⚡ ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ⚡ ✦</div>
+            
+            <button class="btn" onclick="Telegram.WebApp.sendData('ban_perm')">💀 𝑷𝒆𝒓𝒎𝒂𝒏𝒆𝒏𝒕 𝑩𝒂𝒏</button>
+            <button class="btn" onclick="Telegram.WebApp.sendData('ban_temp')">⏳ 𝑻𝒆𝒎𝒑𝒐𝒓𝒂𝒓𝒚 𝑩𝒂𝒏</button>
+            <button class="btn" onclick="Telegram.WebApp.sendData('mass_report')">💥 𝑴𝒂𝒔𝒔 𝑹𝒆𝒑𝒐𝒓𝒕𝒊𝒏𝒈</button>
+            <button class="btn" onclick="Telegram.WebApp.sendData('unban')">⚡ 𝑼𝒏𝒃𝒂𝒏 𝑻𝒂𝒓𝒈𝒆𝒕</button>
+        </div>
+
+        <script>
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        </script>
+    </body>
+    </html>
+    """
 
 def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# --- 4. PERSISTENT STORAGE (USERS & APPROVED JOIN REQUESTS) ---
+# --- 4. PERSISTENT STORAGE ---
 REQ_FILE = "approved_users.json"
 USERS_FILE = "users_db.json"
 
@@ -79,7 +171,7 @@ async def track_join_requests(client, chat_join_request: ChatJoinRequest):
     user_id = chat_join_request.from_user.id
     approved_req_users.add(user_id)
     save_json(REQ_FILE, approved_req_users)
-    print(f"✅ [JOIN REQUEST APPROVED] User ID: {user_id}")
+    print(f"✅ [𝑱𝑶𝑰𝑵 𝑹𝑬𝑼𝑬𝑺𝑻 𝑨𝑑𝑷𝑹𝑶𝑽𝑬𝑫] User ID: {user_id}")
 
 # --- 6. HELPER FUNCTIONS ---
 
@@ -115,18 +207,18 @@ async def check_force_join(client, user_id):
 
 def get_force_join_menu():
     text = (
-        "⚠️️ <b><u>ACCESS DENIED - MANDATORY JOIN REQUIRED</u></b> ⚠️\n\n"
-        "<i>✨ Bot features use karne ke liye Main Channel Join karein aur Baaki Links par Request Send karein!</i>\n\n"
-        "1️⃣ <b>📢 Main Channel (Join Mandatory)</b>\n"
-        "2️⃣ <b>💬 Discussion Group (Send Request)</b>\n"
-        "3️⃣ <b>🔒 Private Channel (Send Request)</b>\n\n"
-        "✅ <i>Sabhi complete karne ke baad <b>'Try Again'</b> button par click karein.</i>"
+        "⛔ <b><u>𝑨𝑪𝑪𝑬𝑺𝑺 𝑫𝑬𝑵𝑰𝑬𝑫 - 𝑴𝑨𝑵𝑫𝑨𝑻𝑶𝑹𝒀 𝑱𝑶𝑰𝑵 𝑑𝑬𝑸𝑼𝑰𝑹𝑬𝑫</u></b> ⛔\n\n"
+        "✨ <i>𝑩𝒐𝒕 features unlock karne ke liye sabhi links par Join / Request bhein!</i>\n\n"
+        "📢 <b>1️⃣ Main Channel (Must Join)</b>\n"
+        "💬 <b>2️⃣ Discussion Group (Send Request)</b>\n"
+        "🔒 <b>3️⃣ Private VIP Channel (Send Request)</b>\n\n"
+        "🔄 <i>Sabhi complete karke <b>'Check Verification'</b> par click karein!</i>"
     )
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📢 Join Main Channel", url=f"https://t.me/{MANDATORY_CHANNEL}")],
-        [InlineKeyboardButton("💬 Request Group Join", url=MANDATORY_GROUP_LINK)],
-        [InlineKeyboardButton("🔒 Request Private Channel", url=REQ_CHANNEL_LINK)],
-        [InlineKeyboardButton("🔄 Try Again / Check Join", callback_data="check_join_status")]
+        [InlineKeyboardButton("📢 𝑱𝒐𝒊𝒏 𝑴𝒂𝒊𝒏 𝑪𝒉𝒂𝒏𝒏𝒆𝒍", url=f"https://t.me/{MANDATORY_CHANNEL}")],
+        [InlineKeyboardButton("💬 𝑹𝒆𝒒𝒖𝒆𝒔𝒕 𝑮𝒓𝒐𝒖𝒑 𝑱𝒐𝒊𝒏", url=MANDATORY_GROUP_LINK)],
+        [InlineKeyboardButton("🔒 𝑹𝒆𝒒𝒖𝒆𝒔𝒕 𝑽𝑰𝑑 𝑪𝒉𝒂𝒏𝒏𝒆𝒍", url=REQ_CHANNEL_LINK)],
+        [InlineKeyboardButton("🔄 𝑪𝒉𝒆𝒄𝒌 𝑽𝒆𝒓𝒊𝒇𝒊𝒄𝒂𝒕𝒊𝒐𝒏", callback_data="check_join_status")]
     ])
     return text, buttons
 
@@ -143,32 +235,34 @@ def get_main_menu(user_id):
     ref_str = f"{user_data.get('referrals', 0)}/10"
     u_str = str(user_id)
 
-    # Option 4 Stylish Title Layout
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://your-render-app.onrender.com")
+
     caption = (
-        "✦ ─────────────── ✦\n"
-        "⚡️ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
-        "✦ ─────────────── ✦\n\n"
-        "• 💀 <b>Permanent Ban</b>\n"
-        "• ⏳ <b>Temporary Ban</b>\n"
-        "• 🔍 <b>Ban Status Checker</b>\n"
-        "• 💥 <b>Mass Reporting System</b>\n\n"
+        "✦ ─────────────────── ✦\n"
+        "⚡ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
+        "✦ ─────────────────── ✦\n\n"
+        "💀 • <b>𝑷𝒆𝒓𝒎𝒂𝒏𝒆𝒏𝒕 𝑩𝒂𝒏 𝑴𝒐𝒅𝒖𝒍𝒆</b>\n"
+        "⏳ • <b>𝑻𝒆𝒎𝒑𝒐𝒓𝒂𝒓𝒚 𝑩𝒂𝒏 𝑴𝒐𝒅𝒖𝒍𝒆</b>\n"
+        "🔍 • <b>𝑩𝒂𝒏 𝑺𝒕𝒂𝒕𝒖𝒔 𝑪𝒉𝒆𝒄𝒌𝒆𝒓</b>\n"
+        "💥 • <b>𝑴𝒂𝒔𝒔 𝑹𝒆𝒑𝒐𝒓𝒕𝒊𝒏𝒈 𝑺𝒚𝒔𝒕𝒆𝒎</b>\n\n"
         "<code>┌─────────────────────────┐\n"
-        f"│ Field     │ Value       │\n"
+        f"│ 𝑭𝒊𝒆𝒍𝒅     │ 𝑽𝒂𝒍𝒖𝒆       │\n"
         "├─────────────────────────┤\n"
         f"│ 👤 User   │ {u_str:<11} │\n"
         f"│ 👑 Status │ {status_str:<11} │\n"
         f"│ 🔮 Refs   │ {ref_str:<11} │\n"
         "└─────────────────────────┘</code>\n\n"
-        "📸 <i>Choose an action below:</i>"
+        "🎯 <i>𝑷𝒍𝒆𝒂𝒔𝒆 𝒔𝒆𝒍𝒆𝒄𝒕 𝒂𝒏 𝒂𝒄𝒕𝒊𝒐𝒏 𝒃𝒆𝒍𝒐𝒘:</i>"
     )
     
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("💀 Permanent Ban", callback_data="ban_perm"), InlineKeyboardButton("⏳ Temporary Ban", callback_data="ban_temp")],
-        [InlineKeyboardButton("💥 Mass Report", callback_data="mass_report"), InlineKeyboardButton("⚡ Unban Target", callback_data="unban")],
-        [InlineKeyboardButton("🔍 Ban Status Checker", callback_data="status"), InlineKeyboardButton("🤖 Bot Status", callback_data="bot_status")],
-        [InlineKeyboardButton("💎 Invite Friends", callback_data="invite"), InlineKeyboardButton("👑 Owner", url=f"https://t.me/{OWNER_USERNAME}")],
-        [InlineKeyboardButton("📢 Channel", url=f"https://t.me/{MANDATORY_CHANNEL}"), InlineKeyboardButton("💬 Group", url=MANDATORY_GROUP_LINK)],
-        [InlineKeyboardButton("🔒 Join Private Channel", url=REQ_CHANNEL_LINK)]
+        [InlineKeyboardButton("🚀 𝑶𝑑𝑬𝑵 𝑭𝑼𝑳𝑳 𝑺𝑪𝑑𝑬𝑬𝑵 𝑨𝑑𝑑", web_app=WebAppInfo(url=f"{render_url}/webapp"))],
+        [InlineKeyboardButton("💀 𝑷𝒆𝒓𝒎𝒂𝒏𝒆𝒏𝒕 𝑩𝒂𝒏", callback_data="ban_perm"), InlineKeyboardButton("⏳ 𝑻𝒆𝒎𝒑𝒐𝒓𝒂𝒓𝒚 𝑩𝒂𝒏", callback_data="ban_temp")],
+        [InlineKeyboardButton("💥 𝑴𝒂𝒔𝒔 𝑹𝒆𝒑𝒐𝒓𝒕", callback_data="mass_report"), InlineKeyboardButton("⚡ 𝑼𝒏𝒃𝒂𝒏 𝑻𝒂𝒓𝒈𝒆𝒕", callback_data="unban")],
+        [InlineKeyboardButton("🔍 𝑺𝒕𝒂𝒕𝒖𝒔 𝑪𝒉𝒆𝒄𝒌𝒆𝒓", callback_data="status"), InlineKeyboardButton("🤖 𝑩𝒐𝒕 𝑺𝒕𝒂𝒕𝒖𝒔", callback_data="bot_status")],
+        [InlineKeyboardButton("💎 𝑰𝒏𝒗𝒊𝒕𝒆 𝑭𝒓𝒊𝒆𝒏𝒅𝒔", callback_data="invite"), InlineKeyboardButton("👑 𝑶𝒘𝒏𝒆𝒓", url=f"https://t.me/{OWNER_USERNAME}")],
+        [InlineKeyboardButton("📢 𝑪𝒉𝒂𝒏𝒏𝒆𝒍", url=f"https://t.me/{MANDATORY_CHANNEL}"), InlineKeyboardButton("💬 𝑮𝒓𝒐𝒖𝒑", url=MANDATORY_GROUP_LINK)],
+        [InlineKeyboardButton("🔒 𝑱𝒐𝒊𝒏 𝑷𝒓𝒊𝒗𝒂𝒕𝒆 VIP", url=REQ_CHANNEL_LINK)]
     ])
     return caption, buttons
 
@@ -181,20 +275,19 @@ async def stats_cmd(client, message):
     free_users = total_users - premium_users
     
     stats_text = (
-        "✦ ─────────────── ✦\n"
-        "⚡️ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
-        "✦ ─────────────── ✦\n\n"
-        "📊 <b><u>BOT STATS</u></b>\n\n"
-        f"👥 <b>Total Users:</b> <code>{total_users}</code>\n"
-        f"💎 <b>Premium Users:</b> <code>{premium_users}</code>\n"
-        f"🪙 <b>Free Users:</b> <code>{free_users}</code>"
+        "✦ ─────────────────── ✦\n"
+        "📊 <b><u>𝑵𝑶𝑩𝑰𝑻𝑨 𝑿 𝑩𝑶𝑻 𝑺𝑻𝑨𝑻𝑰𝑺𝑻𝑰𝑪𝑺</u></b> 📊\n"
+        "✦ ─────────────────── ✦\n\n"
+        f"👥 <b>𝑻𝒐𝒕𝒂𝒍 𝑼𝒔𝒆𝒓𝒔:</b> <code>{total_users}</code>\n"
+        f"💎 <b>𝑷𝒓𝒆𝒎𝒊𝒖𝒎 𝑼𝒔𝒆𝒓𝒔:</b> <code>{premium_users}</code>\n"
+        f"🪙 <b>𝑭𝒓𝒆𝒆 𝑼𝒔𝒆𝒓𝒔:</b> <code>{free_users}</code>"
     )
     await message.reply_video(video=HEADER_VIDEO, caption=stats_text)
 
 @app.on_message(filters.command("addpremium") & filters.user(OWNER_ID))
 async def add_premium_cmd(client, message):
     if len(message.command) < 2:
-        await message.reply_text("❌ <b>Usage:</b> <code>/addpremium <user_id></code>")
+        await message.reply_text("❌ <b><u>𝑼𝒔𝒂𝒈𝒆:</u></b> <code>/addpremium <user_id></code>")
         return
     try:
         target_id = int(message.command[1])
@@ -203,33 +296,33 @@ async def add_premium_cmd(client, message):
         else:
             users_db[target_id]['is_premium'] = True
         save_json(USERS_FILE, users_db)
-        await message.reply_text(f"✅ User <code>{target_id}</code> upgraded to 💎 <b>PREMIUM</b>!")
+        await message.reply_text(f"✨ <b><u>𝑺𝑼𝑪𝑪𝑬𝑺𝑺:</u></b> User <code>{target_id}</code> upgraded to 💎 <b>𝑷𝑹𝑬𝑴𝑰𝑼𝑴</b>!")
     except ValueError:
-        await message.reply_text("❌ Invalid User ID.")
+        await message.reply_text("❌ <b><u>𝑬𝑹𝑹𝑶𝑹:</u></b> <i>Invalid User ID format.</i>")
 
 @app.on_message(filters.command("rempremium") & filters.user(OWNER_ID))
 async def rem_premium_cmd(client, message):
     if len(message.command) < 2:
-        await message.reply_text("❌ <b>Usage:</b> <code>/rempremium <user_id></code>")
+        await message.reply_text("❌ <b><u>𝑼𝒔𝒂𝒈𝒆:</u></b> <code>/rempremium <user_id></code>")
         return
     try:
         target_id = int(message.command[1])
         if target_id in users_db:
             users_db[target_id]['is_premium'] = False
             save_json(USERS_FILE, users_db)
-            await message.reply_text(f"🔻 User <code>{target_id}</code> Premium status removed!")
+            await message.reply_text(f"🔻 <b><u>𝑼𝑷𝑫𝑨𝑻𝑬𝑫:</u></b> User <code>{target_id}</code> Premium access removed!")
         else:
-            await message.reply_text("❌ User not found in database.")
+            await message.reply_text("❌ <b><u>𝑬𝑹𝑹𝑶𝑹:</u></b> <i>User not found in database.</i>")
     except ValueError:
-        await message.reply_text("❌ Invalid User ID.")
+        await message.reply_text("❌ <b><u>𝑬𝑹𝑹𝑶𝑹:</u></b> <i>Invalid User ID format.</i>")
 
 @app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
 async def broadcast_cmd(client, message):
     if not message.reply_to_message:
-        await message.reply_text("❌ <b>Reply to a message to broadcast.</b>")
+        await message.reply_text("❌ <b><u>𝑬𝑹𝑹𝑶𝑹:</u></b> <i>Reply to a message to broadcast.</i>")
         return
     
-    msg = await message.reply_text("🚀 <b>Starting Broadcast...</b>")
+    msg = await message.reply_text("🚀 <b><u>𝑩𝑹𝑶𝑨𝑫𝑪𝑨𝑺𝑻𝑰𝑵𝑮:</u></b> <i>Sending message to all users...</i>")
     success, failed = 0, 0
     
     for uid in list(users_db.keys()):
@@ -241,9 +334,9 @@ async def broadcast_cmd(client, message):
             failed += 1
 
     await msg.edit(
-        "✅ <b><u>BROADCAST COMPLETED</u></b>\n\n"
-        f"🎯 <b>Success:</b> <code>{success}</code>\n"
-        f"❌ <b>Failed:</b> <code>{failed}</code>"
+        "✨ <b><u>𝑩𝑹𝑶𝑨𝑫𝑪𝑨𝑺𝑻 𝑪𝑶𝑴𝑑𝑳𝑬𝑻𝑬𝑫</u></b> ✨\n\n"
+        f"🎯 <b>𝑺𝒖𝒄𝒄𝒆𝒔𝒔:</b> <code>{success}</code>\n"
+        f"❌ <b>𝑭𝒂𝒊𝒍𝒆𝒅:</b> <code>{failed}</code>"
     )
 
 @app.on_message(filters.command("start"))
@@ -270,7 +363,7 @@ async def start_cmd(client, message):
                     try:
                         await client.send_message(
                             ref_by, 
-                            f"🎉 <b>New Referral Joined!</b>\nTotal Referrals: <code>{users_db[ref_by]['referrals']}/10</code>"
+                            f"🎉 <b><u>𝑵𝑬𝑹 𝑑𝑬𝑭𝑬𝑹𝑹𝑨𝑳:</u></b>\nTotal Referrals: <code>{users_db[ref_by]['referrals']}/10</code>"
                         )
                     except Exception:
                         pass
@@ -278,9 +371,9 @@ async def start_cmd(client, message):
                 pass
         save_json(USERS_FILE, users_db)
 
-    msg = await message.reply_text("⚙️ <i>Initializing System...</i>")
+    msg = await message.reply_text("⚙️ <i>𝑰𝒏𝒊𝒕𝒊𝒂𝒍𝒊𝒛𝒊𝒏𝒈 𝑺𝒚𝒔𝒕𝒆𝒎...</i>")
     await asyncio.sleep(0.3)
-    await msg.edit("🔥 <i>Loading Video Animation...</i>")
+    await msg.edit("🔥 <i>𝑳𝒐𝒂𝒅𝒊𝒏𝒈 𝑨𝒏𝒊𝒎𝒂𝒕𝒊𝒐𝒏...</i>")
     await asyncio.sleep(0.3)
     await msg.delete()
 
@@ -298,16 +391,16 @@ async def handle_input(client, message):
         action_type = user_states.pop(user_id)
         target = message.text.strip()
         
-        msg = await message.reply_text("⏳ <b>Processing Task...</b>")
+        msg = await message.reply_text("⏳ <b><u>𝑷𝑹𝑶𝑪𝑬𝑺𝑺𝑰𝑵𝑮 𝑻𝑨𝑺𝑑...</u></b>")
         
         for pct in [20, 40, 60, 80, 100]:
             await asyncio.sleep(0.6)
             bar = render_progress_bar(pct)
             
             table_text = (
-                "✦ ─────────────── ✦\n"
-                "⚡️ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
-                "✦ ─────────────── ✦\n\n"
+                "✦ ─────────────────── ✦\n"
+                "⚡ <b>ＮＯＢＩＴＡ ＢＡＮ Ｘ ＵＮＢＡＮ ＰＲＥＭＩＵＭ ＢＯＴ</b> ⚡️\n"
+                "✦ ─────────────────── ✦\n\n"
                 "<code>┌─────────────────────────┐\n"
                 f"│ Target   │ {target[:11]:<11} │\n"
                 "├─────────────────────────┤\n"
@@ -319,13 +412,13 @@ async def handle_input(client, message):
             await msg.edit_text(table_text)
 
         final_output = (
-            "✉️ <b>Action Execution Completed</b>\n\n"
-            "📜 <i>Summary Log Output:</i>\n\n"
+            "✨ <b><u>𝑬𝑹𝑬𝑪𝑼𝑻𝑰𝑶𝑵 𝑪𝑶𝑴𝑑𝑳𝑬𝑻𝑬𝑫</u></b> ✨\n\n"
+            "📜 <i>𝑺𝒖𝒎𝒎𝒂𝒓𝒚 𝑳𝒐𝒈:</i>\n\n"
             f"<blockquote>🎯 <b>Target:</b> {target}\n"
-            f"⚡ <b>Action Module:</b> {action_type}\n"
-            "✅ <b>Status:</b> Interface routine rendered successfully.</blockquote>"
+            f"⚡ <b>Module:</b> {action_type}\n"
+            "✅ <b>Status:</b> Interface routine executed successfully.</blockquote>"
         )
-        back_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_menu")]])
+        back_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 𝑩𝒂𝒄𝒌 𝒕𝒐 𝑴𝒆𝒏𝒖", callback_data="back_to_menu")]])
         await msg.edit_text(final_output, reply_markup=back_btn)
 
 # --- 8. CALLBACK QUERY HANDLER ---
@@ -337,14 +430,14 @@ async def cb_handler(client, query):
     
     if data == "check_join_status":
         if await check_force_join(client, user_id):
-            await query.answer("✅ Verification Successful!", show_alert=True)
+            await query.answer("✨ Verification Successful!", show_alert=True)
             caption, buttons = get_main_menu(user_id)
             try:
                 await query.message.edit_caption(caption=caption, reply_markup=buttons)
             except Exception:
                 await query.message.edit_text(text=caption, reply_markup=buttons)
         else:
-            await query.answer("❌ Aapne channels join nahi kiye ya request send nahi ki!", show_alert=True)
+            await query.answer("❌ Verification Failed! Pehle sabhi channels join karein.", show_alert=True)
         return
 
     if data == "back_to_menu":
@@ -360,15 +453,15 @@ async def cb_handler(client, query):
         ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
         user_data = users_db.get(user_id, {'referrals': 0})
         invite_text = (
-            "🚀 <b><u>INVITE & EARN PREMIUM</u></b>\n\n"
-            "💡 <i>Invite 10 friends to automatically unlock 💎 PREMIUM Access!</i>\n\n"
-            f"📊 <b>Your Referrals:</b> <code>{user_data.get('referrals', 0)}/10</code>\n"
-            f"🔗 <b>Your Invite Link:</b>\n<code>{ref_link}</code>"
+            "🚀 <b><u>𝑰𝑵𝑽𝑰𝑻𝑬 & 𝑬𝑨𝑹𝑵 𝑷𝑹𝑬𝑴𝑰𝑼𝑴</u></b>\n\n"
+            "💡 <i>10 friends ko invite karein aur 💎 PREMIUM access free unlock karein!</i>\n\n"
+            f"📊 <b>𝒀𝒐𝒖𝒓 𝑹𝒆𝒇𝒆𝒓𝒓𝒂𝒍𝒔:</b> <code>{user_data.get('referrals', 0)}/10</code>\n"
+            f"🔗 <b>𝒀𝒐𝒖𝒓 𝑰𝒏𝒗𝒊𝒕𝒆 𝑳𝒊𝒏𝒌:</b>\n<code>{ref_link}</code>"
         )
         buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📤 Share Referral Link", url=f"https://t.me/share/url?url={ref_link}&text=Join%20Nobita%20Ban%20Bot")],
-            [InlineKeyboardButton("👑 Contact Owner", url=f"https://t.me/{OWNER_USERNAME}")],
-            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_menu")]
+            [InlineKeyboardButton("📤 𝑺𝒉𝒂𝒓𝒆 𝑹𝒆𝒇𝒆𝒓𝒓𝒂𝒍 𝑳𝒊𝒏𝒌", url=f"https://t.me/share/url?url={ref_link}&text=Join%20Nobita%20Ban%20Bot")],
+            [InlineKeyboardButton("👑 𝑪𝒐𝒏𝒕𝒂𝒄𝒕 𝑶𝒘𝒏𝒆𝒓", url=f"https://t.me/{OWNER_USERNAME}")],
+            [InlineKeyboardButton("🔙 𝑩𝒂𝒄𝒌 𝒕𝒐 𝑴𝒆𝒏𝒖", callback_data="back_to_menu")]
         ])
         try:
             await query.message.edit_caption(caption=invite_text, reply_markup=buttons)
@@ -382,17 +475,17 @@ async def cb_handler(client, query):
         if user_id != OWNER_ID and not user_data.get('is_premium', False):
             ref_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
             restricted_text = (
-                "🚫 <b><u>ACCESS RESTRICTED</u></b> 🚫\n\n"
-                "⚠️ <i>You are currently a 🪙 FREE User. Upgrade to 💎 PREMIUM to use this feature!</i>\n\n"
-                f"📊 <b>Your Referrals:</b> <code>{user_data.get('referrals', 0)}/10</code>\n\n"
-                "🎯 <b><u>HOW TO UNLOCK PREMIUM?</u></b>\n"
-                f"1️⃣ <b>Referral Method:</b> Invite 10 friends using your link:\n<code>{ref_link}</code>\n\n"
-                f"2️⃣ <b>Direct Method:</b> Contact Owner to buy Premium."
+                "⛔ <b><u>𝑨𝑪𝑪𝑬𝑺𝑺 𝑹𝑬𝑺𝑻𝑑𝑰𝑪𝑻𝑬𝑫</u></b> ⛔\n\n"
+                "⚠️ <i>Aap abhi 🪙 FREE User hain. Yeh feature use karne ke liye Upgrade karein!</i>\n\n"
+                f"📊 <b>𝒀𝒐𝒖𝒓 𝑹𝒆𝒇𝒆𝒓𝒓𝒂𝒍𝒔:</b> <code>{user_data.get('referrals', 0)}/10</code>\n\n"
+                "💎 <b><u>𝑯𝑶𝑑 𝑻𝑶 𝑼𝑵𝑳𝑶𝑪𝑀 𝑷𝑹𝑬𝑴𝑰𝑼𝑴?</u></b>\n"
+                f"1️⃣ <b>Referrals:</b> 10 friends ko link se join karwaye:\n<code>{ref_link}</code>\n\n"
+                f"2️⃣ <b>Direct Buy:</b> Owner se buy karein."
             )
             restricted_buttons = InlineKeyboardMarkup([
-                [InlineKeyboardButton("📤 Share Referral Link", url=f"https://t.me/share/url?url={ref_link}&text=Join%20Nobita%20Ban%20Bot")],
-                [InlineKeyboardButton("👑 Contact Owner for Premium", url=f"https://t.me/{OWNER_USERNAME}")],
-                [InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_menu")]
+                [InlineKeyboardButton("📤 𝑺𝒉𝒂𝒓𝒆 𝑹𝒆𝒇𝒆𝒓𝒓𝒂𝒍 𝑳𝒊𝒏𝒌", url=f"https://t.me/share/url?url={ref_link}&text=Join%20Nobita%20Ban%20Bot")],
+                [InlineKeyboardButton("👑 𝑩𝒖𝒚 𝑷𝒓𝒆𝒎𝒊𝒖𝒎", url=f"https://t.me/{OWNER_USERNAME}")],
+                [InlineKeyboardButton("🔙 𝑩𝒂𝒄𝒌 𝒕𝒐 𝑴𝒆𝒏𝒖", callback_data="back_to_menu")]
             ])
             try:
                 await query.message.edit_caption(caption=restricted_text, reply_markup=restricted_buttons)
@@ -412,10 +505,10 @@ async def cb_handler(client, query):
         user_states[user_id] = data
         
         ask_text = (
-            "🎯 <b><u>ENTER TARGET INFORMATION</u></b>\n\n"
-            "✍️ <i>Please send the target input in standard format:</i>"
+            "🎯 <b><u>𝑬𝑵𝑻𝑬𝑹 𝑻𝑨𝑹𝑮𝑬𝑻 𝑰𝑵𝑭𝑶𝑹𝑴𝑨𝑻𝑰𝑶𝑵</u></b>\n\n"
+            "✍️ <i>Please send target details in standard format:</i>"
         )
-        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Cancel", callback_data="back_to_menu")]])
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 𝑪𝒂𝒏𝒄𝒆𝒍", callback_data="back_to_menu")]])
         try:
             await query.message.edit_caption(caption=ask_text, reply_markup=buttons)
         except Exception:
@@ -423,7 +516,7 @@ async def cb_handler(client, query):
 
 # --- 9. BOT EXECUTION ---
 if __name__ == "__main__":
-    print("🚀 Starting Dummy Web Server for Render Port Binding...")
+    print("🚀 Starting Web Server for Render Port Binding...")
     server_thread = threading.Thread(target=run_web_server)
     server_thread.daemon = True
     server_thread.start()
