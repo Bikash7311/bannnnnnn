@@ -6,6 +6,13 @@ import threading
 from datetime import datetime
 from flask import Flask
 
+# --- 1. EVENT LOOP SETUP FOR PYTHON 3.10+ / 3.14 ---
+try:
+    loop = asyncio.get_event_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
 from hydrogram import Client, filters, idle
 from hydrogram.types import (
     InlineKeyboardMarkup, 
@@ -16,7 +23,7 @@ from hydrogram.types import (
 )
 from hydrogram.errors import UserNotParticipant
 
-# --- 1. CONFIGURATION ---
+# --- 2. CONFIGURATION ---
 API_ID = 33772941  
 API_HASH = "3b6ab6b1940c87915439bb41e4e80ea8"  
 BOT_TOKEN = "8904752333:AAFeTxNjK0VhzBU60qT8asTIZo09too2ahE"
@@ -33,9 +40,10 @@ HEADER_VIDEO = "https://videotourl.com/videos/1791282196960-032c9029-1397-468f-a
 
 START_TIME = time.time()
 
+# CLIENT INITIALIZATION
 app = Client("NobitaBanBotSession", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# --- 2. FLASK SERVER FOR RENDER PORT BINDING ---
+# --- 3. FLASK SERVER FOR RENDER PORT BINDING ---
 web_app = Flask("bot")
 
 @web_app.route('/')
@@ -46,7 +54,7 @@ def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port, use_reloader=False)
 
-# --- 3. PERSISTENT DATA STORAGE ---
+# --- 4. PERSISTENT DATA STORAGE ---
 REQ_FILE = "approved_users.json"
 USERS_FILE = "users_db.json"
 
@@ -72,14 +80,14 @@ cooldowns = {}
 user_states = {}
 COOLDOWN_TIME = 300  # 5 Minutes Cooldown
 
-# --- 4. JOIN REQUEST EVENT HANDLER ---
+# --- 5. JOIN REQUEST EVENT HANDLER ---
 @app.on_chat_join_request()
 async def track_join_requests(client, chat_join_request: ChatJoinRequest):
     user_id = chat_join_request.from_user.id
     approved_req_users.add(user_id)
     save_json(REQ_FILE, approved_req_users)
 
-# --- 5. HELPER FUNCTIONS ---
+# --- 6. HELPER FUNCTIONS ---
 def render_progress_bar(percent: int, length: int = 12) -> str:
     filled = int(length * percent // 100)
     bar = "█" * filled + "░" * (length - filled)
@@ -185,7 +193,7 @@ def get_bottom_keyboard():
         resize_keyboard=True
     )
 
-# --- 6. COMMAND HANDLERS ---
+# --- 7. COMMAND HANDLERS ---
 @app.on_message(filters.command("stats") & filters.user(OWNER_ID))
 async def stats_cmd(client, message):
     tot_users = get_total_users_count()
@@ -288,7 +296,7 @@ async def start_cmd(client, message):
     
     await message.reply_video(video=HEADER_VIDEO, caption=caption, reply_markup=reply_kb)
 
-# --- 7. BOTTOM KEYBOARD CLICK HANDLER ---
+# --- 8. BOTTOM KEYBOARD CLICK HANDLER ---
 @app.on_message(filters.text & ~filters.command(["start", "stats", "addpremium", "rempremium", "broadcast"]))
 async def handle_bottom_buttons(client, message):
     user_id = message.from_user.id
@@ -446,7 +454,7 @@ async def handle_bottom_buttons(client, message):
 
         # 20 Seconds Continuous Animation Loop
         for pct in range(5, 105, 10):
-            await asyncio.sleep(2.0)  # Total 10 steps * 2s = 20 seconds
+            await asyncio.sleep(2.0)
             bar = render_progress_bar(pct)
             
             anim_text = (
@@ -478,7 +486,7 @@ async def handle_bottom_buttons(client, message):
         except Exception:
             await message.reply_text(final_summary)
 
-# --- 8. CALLBACK QUERY HANDLER ---
+# --- 9. CALLBACK QUERY HANDLER ---
 @app.on_callback_query()
 async def cb_handler(client, query):
     data = query.data
@@ -498,18 +506,16 @@ async def cb_handler(client, query):
     if data in ["set_lang_en", "set_lang_hi"]:
         await query.answer("✅ Language Updated Successfully!", show_alert=True)
 
-# --- 9. ASYNC MAIN RUNNER ---
-async def main():
-    # Start Flask Web Server Thread
+# --- 10. ASYNC MAIN EXECUTOR ---
+async def start_bot():
     server_thread = threading.Thread(target=run_web_server)
     server_thread.daemon = True
     server_thread.start()
 
-    # Start Hydrogram Client Safely
     await app.start()
-    print("🚀 Nobita Ban Bot is Online & Live!")
+    print("🚀 Nobita Ban Bot Started Successfully!")
     await idle()
     await app.stop()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop.run_until_complete(start_bot())
