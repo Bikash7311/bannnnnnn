@@ -3,7 +3,6 @@ import json
 import os
 import time
 import threading
-from datetime import datetime
 from flask import Flask
 
 # --- 1. EVENT LOOP FIX ---
@@ -42,7 +41,7 @@ START_TIME = time.time()
 
 app = Client("NobitaBanBotSession", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# --- 3. FLASK SERVER ---
+# --- 3. FLASK SERVER FOR RENDER PORT BINDING ---
 web_app = Flask(__name__)
 
 @web_app.route('/')
@@ -53,7 +52,7 @@ def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# --- 4. DATA STORAGE ---
+# --- 4. PERSISTENT DATA STORAGE ---
 REQ_FILE = "approved_users.json"
 USERS_FILE = "users_db.json"
 
@@ -79,7 +78,7 @@ cooldowns = {}
 user_states = {}
 COOLDOWN_TIME = 300  # 5 Minutes Cooldown
 
-# --- 5. JOIN REQUEST HANDLER ---
+# --- 5. JOIN REQUEST EVENT HANDLER ---
 @app.on_chat_join_request()
 async def track_join_requests(client, chat_join_request: ChatJoinRequest):
     user_id = chat_join_request.from_user.id
@@ -346,7 +345,7 @@ async def handle_bottom_buttons(client, message):
         status_text = "💎 PREMIUM USER" if user_data.get('is_premium', False) else "🪙 FREE USER"
         
         premium_text = (
-            "💎 <b><u>𝑷𝑼𝑑𝑪𝑯𝑨𝑺𝑬 𝑷𝑹𝑬𝑴𝑰𝑼𝑴 𝑨𝑪𝑪𝑬𝑺𝑺</u></b> 💎\n\n"
+            "💎 <b><u>𝑷𝑼𝑹𝑪𝑯𝑨𝑺𝑬 𝑷𝑹𝑬𝑴𝑰𝑼𝑴 𝑨𝑪𝑪𝑬𝑺𝑺</u></b> 💎\n\n"
             "<blockquote>"
             "⚡ <b>Unlock all powerful Ban & Mass Reporting features!</b>\n\n"
             f"👤 <b>Your User ID:</b> <code>{user_id}</code>\n"
@@ -437,7 +436,7 @@ async def handle_bottom_buttons(client, message):
 
         initial_msg = (
             "<blockquote>"
-            f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑑 𝑴𝑨𝑺𝑺 𝑑𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
+            f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑑𝑶𝑹𝑻</u></b>\n\n"
             f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
             f"⚡ <b>Module:</b> <code>{action_type}</code>\n\n"
             f"⚙️ <i>Initializing attacking servers...</i>\n"
@@ -453,7 +452,7 @@ async def handle_bottom_buttons(client, message):
             
             anim_text = (
                 "<blockquote>"
-                f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑑 𝑴𝑨𝑺𝑺 𝑑𝑬𝑷𝑶𝑹𝑻</u></b>\n\n"
+                f"🔥 <b><u>𝑾𝑯𝑨𝑻𝑺𝑨𝑷𝑷 𝑵𝑼𝑴𝑩𝑬𝑹 𝑴𝑨𝑺𝑺 𝑹𝑬𝑑𝑶𝑹𝑻</u></b>\n\n"
                 f"🎯 <b>Target:</b> <code>{target_number}</code>\n"
                 f"⚡ <b>Module:</b> <code>{action_type}</code>\n"
                 f"📊 <b>Progress:</b> <code>{pct}%</code>\n\n"
@@ -467,7 +466,7 @@ async def handle_bottom_buttons(client, message):
                 pass
 
         final_summary = (
-            "✨ <b><u>𝑬𝑑𝑬𝑪𝑼𝑻𝑰𝑶𝑵 𝑪𝑶𝑴𝑴𝑷𝑳𝑬𝑻𝑬𝑫</u></b> ✨\n\n"
+            "✨ <b><u>𝑬𝑿𝑬𝑪𝑼𝑻𝑰𝑶𝑵 𝑪𝑶𝑴𝑴𝑷𝑳𝑬𝑻𝑬𝑫</u></b> ✨\n\n"
             "<blockquote>"
             f"🎯 <b>Target Number:</b> <code>{target_number}</code>\n"
             f"⚡ <b>Action Module:</b> <code>{action_type}</code>\n"
@@ -501,4 +500,8 @@ async def cb_handler(client, query):
         await query.answer("✅ Language Updated Successfully!", show_alert=True)
 
 # --- 10. EXECUTION ---
-if __name__ == "__
+if __name__ == "__main__":
+    server_thread = threading.Thread(target=run_web_server)
+    server_thread.daemon = True
+    server_thread.start()
+    app.run()
